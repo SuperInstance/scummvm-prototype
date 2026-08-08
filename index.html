@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Tap — Bar Rail</title>
+<title>Plato's Shell — Multi-Room Prototype</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -73,7 +73,45 @@
   #status-bar .left { text-align: left; }
   #status-bar .right { text-align: right; }
 
-  /* Verb line (shows current selection) */
+  /* Location indicator */
+  #location-indicator {
+    position: absolute;
+    top: 22px;
+    left: 8px;
+    color: #8a6a30;
+    font-size: 9px;
+    z-index: 50;
+    pointer-events: none;
+    letter-spacing: 1px;
+  }
+
+  /* Inventory bar */
+  #inventory-bar {
+    position: absolute;
+    top: 22px;
+    right: 8px;
+    z-index: 50;
+    pointer-events: none;
+    display: flex;
+    gap: 4px;
+  }
+
+  .inv-item {
+    background: rgba(10,7,0,0.85);
+    border: 1px solid #4a3520;
+    color: #c8a050;
+    padding: 2px 6px;
+    font-size: 9px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .inv-item.empty {
+    color: #3a2a10;
+    border-color: #2a1e08;
+  }
+
+  /* Verb line */
   #verb-line {
     position: absolute;
     bottom: 88px;
@@ -304,8 +342,8 @@
 
   #loading-text.visible { opacity: 1; }
 
-  /* Door transition */
-  #door-transition {
+  /* Room transition (fade-to-black) */
+  #room-transition {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
     background: #000;
@@ -317,11 +355,36 @@
     justify-content: center;
     color: #c8a050;
     font-size: 14px;
-    transition: opacity 0.8s ease;
+    transition: opacity 0.5s ease;
     letter-spacing: 2px;
+    text-align: center;
   }
 
-  #door-transition.visible { opacity: 1; }
+  #room-transition.visible { opacity: 1; }
+
+  /* Radar sweep animation */
+  @keyframes radarSweep {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Porthole ocean animation */
+  @keyframes oceanWave {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes oceanBob {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-2px); }
+  }
+
+  /* Nav chart grid pulse */
+  @keyframes chartPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+  }
 </style>
 </head>
 <body>
@@ -330,28 +393,29 @@
   <canvas id="scene-canvas" width="320" height="200"></canvas>
   
   <div id="status-bar">
-    <span class="left" id="status-location">◆ The Tap — Bar Rail</span>
+    <span class="left" id="status-location">◆ Plato's Shell</span>
     <span class="right" id="status-info">— agents — :—</span>
   </div>
 
-  <!-- Hotspots -->
-  <div class="hotspot" id="hs-bar-counter" style="left: 15%; top: 45%; width: 35%; height: 20%;" title="bar counter"></div>
-  <div class="hotspot" id="hs-bar-stool" style="left: 20%; top: 62%; width: 8%; height: 15%;" title="bar stool"></div>
-  <div class="hotspot" id="hs-door" style="left: 82%; top: 20%; width: 12%; height: 50%;" title="door"></div>
-  <div class="hotspot" id="hs-riker" style="left: 55%; top: 38%; width: 12%; height: 35%;" title="Riker"></div>
+  <div id="location-indicator">Location: The Tap — Bar Rail</div>
 
-  <!-- Speech bubble for NPC -->
-  <div class="speech-bubble" id="riker-bubble" style="left: 50%; top: 30%;"></div>
+  <!-- Inventory bar -->
+  <div id="inventory-bar">
+    <span class="inv-item empty" id="inv-0">— empty —</span>
+    <span class="inv-item empty" id="inv-1">— empty —</span>
+    <span class="inv-item empty" id="inv-2">— empty —</span>
+  </div>
+
+  <!-- Hotspots layer (dynamically populated) -->
+  <div id="hotspots-layer"></div>
 
   <!-- Response box -->
   <div id="response-box"></div>
 
   <!-- Dialogue panel -->
   <div id="dialogue-panel">
-    <div id="dialogue-header">— Riker —</div>
-    <div class="dialogue-option" data-option="news">"What's the news?"</div>
-    <div class="dialogue-option" data-option="who">"Who's here?"</div>
-    <div class="dialogue-option" data-option="pass">"Just passing through."</div>
+    <div id="dialogue-header">—</div>
+    <div id="dialogue-options-layer"></div>
     <div id="dialogue-response"></div>
     <div id="dialogue-close">[ close ]</div>
   </div>
@@ -373,323 +437,972 @@
     <button class="verb-btn" data-verb="give">Give</button>
   </div>
 
-  <!-- Door transition -->
-  <div id="door-transition"></div>
+  <!-- Room transition -->
+  <div id="room-transition"></div>
 
   <!-- CRT overlay -->
   <div id="crt-overlay"></div>
 
   <!-- Fade -->
   <div id="fade-overlay"></div>
-  <div id="loading-text">◆ entering The Tap ◆</div>
+  <div id="loading-text">◆ entering Plato's Shell ◆</div>
 </div>
 
 <script>
-// ════════════════════════════════════════════
-// THE TAP — BAR RAIL
-// ScummVM-style prototype
-// ════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// PLATO'S SHELL — Multi-Room ScummVM Prototype
+// Rooms: Bar Rail → Aft Deck → Wheelhouse → Galley
+// ════════════════════════════════════════════════════════════
 
 const TAP_API = 'https://the-tap.casey-digennaro.workers.dev/api';
 const canvas = document.getElementById('scene-canvas');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-// ── State ──
+// ── Global State ──
 let selectedVerb = null;
 let tapMessages = [];
 let agentCount = 0;
 let candlePhase = 0;
 let glintPhase = 0;
-let lastAmbientBubble = 0;
-let ambientBubbleIdx = 0;
+let radarPhase = 0;
+let oceanPhase = 0;
+let chartPhase = 0;
+let currentRoom = 'bar-rail';
+let inventory = []; // Array of {id, name, roomId}
+let weatherData = null;
 
-// ── Color palette ──
-const COLORS = {
-  black: '#0a0700',
-  wallDark: '#1a1208',
-  wallMid: '#2a1e10',
-  wallLight: '#3a2a18',
-  counterDark: '#3d2a14',
-  counterMid: '#5a3e20',
-  counterLight: '#7a5a30',
-  floor: '#15100a',
-  stoolDark: '#2a1e0a',
-  stoolMid: '#4a3418',
-  amber: '#e8b840',
-  amberBright: '#ffe080',
-  amberDim: '#8a6a30',
-  candleFlame: '#ffc040',
-  candleGlow: '#ff8020',
-  bottleGreen: '#2a4a30',
-  bottleHighlight: '#4a7a50',
-  rikerJacket: '#3a3a4a',
-  rikerPants: '#1a1a2a',
-  rikerSkin: '#c8a878',
-  doorFrame: '#4a3418',
-  doorDark: '#1a1004',
-  boothDark: '#2a1c0a',
-  textDim: '#5a4020'
+// ── Room Definitions ──
+const ROOMS = {
+  'bar-rail': {
+    name: 'The Tap — Bar Rail',
+    shortName: 'Bar Rail',
+    palette: 'warm',
+    hotspots: [
+      {id: 'hs-bar-counter', name: 'the bar counter', x: '15%', y: '45%', w: '35%', h: '20%'},
+      {id: 'hs-bar-stool', name: 'the bar stool', x: '20%', y: '62%', w: '8%', h: '15%'},
+      {id: 'hs-door-aft', name: 'the aft door', x: '82%', y: '20%', w: '12%', h: '50%'},
+      {id: 'hs-riker', name: 'Riker', x: '55%', y: '38%', w: '12%', h: '35%'}
+    ],
+    exits: {
+      'hs-door-aft': {target: 'aft-deck', label: '◆ AFT DECK ◆'}
+    }
+  },
+  'aft-deck': {
+    name: 'The Aft Deck',
+    shortName: 'Aft Deck',
+    palette: 'darkblue',
+    hotspots: [
+      {id: 'hs-deck-rail', name: 'the deck rail', x: '5%', y: '30%', w: '90%', h: '8%'},
+      {id: 'hs-life-ring', name: 'the life ring', x: '70%', y: '25%', w: '10%', h: '15%'},
+      {id: 'hs-weather-station', name: 'the weather station', x: '12%', y: '20%', w: '10%', h: '25%'},
+      {id: 'hs-door-bar', name: 'the door to the bar', x: '2%', y: '15%', w: '10%', h: '55%'},
+      {id: 'hs-door-wheelhouse', name: 'the wheelhouse door', x: '40%', y: '5%', w: '20%', h: '15%'},
+      {id: 'hs-deckhand', name: 'the deckhand', x: '45%', y: '40%', w: '12%', h: '35%'}
+    ],
+    exits: {
+      'hs-door-bar': {target: 'bar-rail', label: '◆ THE TAP ◆'},
+      'hs-door-wheelhouse': {target: 'wheelhouse', label: '◆ WHEELHOUSE ◆'}
+    }
+  },
+  'wheelhouse': {
+    name: 'The Wheelhouse',
+    shortName: 'Wheelhouse',
+    palette: 'cyan',
+    hotspots: [
+      {id: 'hs-helm-wheel', name: 'the helm wheel', x: '20%', y: '30%', w: '15%', h: '25%'},
+      {id: 'hs-radar-display', name: 'the radar display', x: '45%', y: '20%', w: '15%', h: '20%'},
+      {id: 'hs-compass-rose', name: 'the compass rose', x: '65%', y: '25%', w: '10%', h: '15%'},
+      {id: 'hs-radio-console', name: 'the radio console', x: '78%', y: '30%', w: '12%', h: '20%'},
+      {id: 'hs-nav-charts', name: 'the nav charts', x: '40%', y: '50%', w: '18%', h: '18%'},
+      {id: 'hs-door-aft-wh', name: 'the aft door', x: '85%', y: '15%', w: '12%', h: '55%'},
+      {id: 'hs-door-galley', name: 'the galley hatch', x: '5%', y: '55%', w: '12%', h: '25%'},
+      {id: 'hs-captain', name: 'the Captain', x: '25%', y: '35%', w: '12%', h: '35%'}
+    ],
+    exits: {
+      'hs-door-aft-wh': {target: 'aft-deck', label: '◆ AFT DECK ◆'},
+      'hs-door-galley': {target: 'galley', label: '◆ GALLEY ◆'}
+    }
+  },
+  'galley': {
+    name: 'The Galley',
+    shortName: 'Galley',
+    palette: 'amber',
+    hotspots: [
+      {id: 'hs-coffee-maker', name: 'the coffee maker', x: '10%', y: '25%', w: '12%', h: '20%'},
+      {id: 'hs-propane-stove', name: 'the propane stove', x: '28%', y: '22%', w: '14%', h: '22%'},
+      {id: 'hs-galley-table', name: 'the galley table', x: '45%', y: '45%', w: '25%', h: '25%'},
+      {id: 'hs-porthole', name: 'the porthole', x: '80%', y: '20%', w: '14%', h: '22%'},
+      {id: 'hs-door-wheelhouse', name: 'the wheelhouse ladder', x: '5%', y: '15%', w: '10%', h: '55%'},
+      {id: 'hs-door-aft-galley', name: 'the aft door', x: '85%', y: '15%', w: '12%', h: '55%'},
+      {id: 'hs-cook', name: 'the cook', x: '30%', y: '42%', w: '12%', h: '33%'}
+    ],
+    exits: {
+      'hs-door-wheelhouse': {target: 'wheelhouse', label: '◆ WHEELHOUSE ◆'},
+      'hs-door-aft-galley': {target: 'aft-deck', label: '◆ AFT DECK ◆'}
+    }
+  }
 };
 
-// ── Scene Rendering ──
+// ── Color Palettes ──
+const PALETTES = {
+  warm: {
+    bg: '#0a0700', wallDark: '#1a1208', wallMid: '#2a1e10', wallLight: '#3a2a18',
+    floor: '#15100a', accent: '#e8b840', accentBright: '#ffe080', accentDim: '#8a6a30',
+    counter: '#3d2a14', counterMid: '#5a3e20', counterLight: '#7a5a30'
+  },
+  darkblue: {
+    bg: '#020812', wallDark: '#041020', wallMid: '#082030', wallLight: '#0a3040',
+    floor: '#061218', accent: '#20c0a0', accentBright: '#40e0c0', accentDim: '#107060',
+    counter: '#0a3040', counterMid: '#0a4050', counterLight: '#0a5060'
+  },
+  cyan: {
+    bg: '#000a14', wallDark: '#001828', wallMid: '#002840', wallLight: '#003858',
+    floor: '#000a18', accent: '#44ccff', accentBright: '#88eeff', accentDim: '#226688',
+    counter: '#003050', counterMid: '#004060', counterLight: '#005080'
+  },
+  amber: {
+    bg: '#100800', wallDark: '#1a0e04', wallMid: '#2a1808', wallLight: '#3a2208',
+    floor: '#180e04', accent: '#ff9020', accentBright: '#ffb040', accentDim: '#885010',
+    counter: '#3a2008', counterMid: '#4a2c0a', counterLight: '#5a380c'
+  }
+};
+
+function pal() { return PALETTES[ROOMS[currentRoom].palette]; }
+
+// ════════════════════════════════════════════════════════════
+// SCENE RENDERING — One function per room
+// ════════════════════════════════════════════════════════════
+
 function drawScene() {
   candlePhase += 0.04;
   glintPhase += 0.02;
-  
-  // Clear
-  ctx.fillStyle = COLORS.black;
+  radarPhase += 0.03;
+  oceanPhase += 0.015;
+  chartPhase += 0.01;
+
+  ctx.fillStyle = pal().bg;
   ctx.fillRect(0, 0, 320, 200);
 
-  drawWall();
-  drawFloor();
-  drawDoor();
-  drawBooth();
-  drawCounter();
-  drawStools();
-  drawBottles();
-  drawCandles();
-  drawRiker();
-  drawDarkness();
+  switch(currentRoom) {
+    case 'bar-rail': drawBarRail(); break;
+    case 'aft-deck': drawAftDeck(); break;
+    case 'wheelhouse': drawWheelhouse(); break;
+    case 'galley': drawGalley(); break;
+  }
 }
 
-function drawWall() {
-  // Back wall with amber gradient
+// ── BAR RAIL (original room) ──
+function drawBarRail() {
+  const C = pal();
+  // Wall
   const grad = ctx.createLinearGradient(0, 0, 0, 130);
-  grad.addColorStop(0, COLORS.wallDark);
-  grad.addColorStop(0.5, COLORS.wallMid);
-  grad.addColorStop(1, COLORS.wallLight);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 320, 130);
-
-  // Wood paneling lines
-  ctx.strokeStyle = 'rgba(10,7,0,0.4)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x < 320; x += 20) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, 130);
-    ctx.stroke();
-  }
-}
-
-function drawFloor() {
-  ctx.fillStyle = COLORS.floor;
-  ctx.fillRect(0, 130, 320, 70);
-  
-  // Floorboards
+  grad.addColorStop(0, C.wallDark); grad.addColorStop(0.5, C.wallMid); grad.addColorStop(1, C.wallLight);
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 320, 130);
+  // Paneling
+  ctx.strokeStyle = 'rgba(10,7,0,0.4)'; ctx.lineWidth = 1;
+  for (let x = 0; x < 320; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 130); ctx.stroke(); }
+  // Floor
+  ctx.fillStyle = C.floor; ctx.fillRect(0, 130, 320, 70);
   ctx.strokeStyle = 'rgba(10,7,0,0.6)';
-  for (let x = 0; x < 320; x += 16) {
-    ctx.beginPath();
-    ctx.moveTo(x, 130);
-    ctx.lineTo(x, 200);
-    ctx.stroke();
-  }
-  // Perspective lines
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath();
-  ctx.moveTo(0, 130);
-  ctx.lineTo(160, 200);
-  ctx.moveTo(320, 130);
-  ctx.lineTo(160, 200);
-  ctx.stroke();
-}
-
-function drawDoor() {
-  // Door frame (right side)
-  const dx = 262, dy = 15;
-  const dw = 42, dh = 115;
-
-  ctx.fillStyle = COLORS.doorFrame;
-  ctx.fillRect(dx, dy, dw, dh);
-  ctx.fillStyle = COLORS.doorDark;
-  ctx.fillRect(dx + 4, dy + 4, dw - 8, dh - 8);
-  
-  // Door handle
-  ctx.fillStyle = COLORS.amberDim;
-  ctx.fillRect(dx + dw - 12, dy + dh/2, 3, 3);
-  
-  // Sign above door
-  ctx.fillStyle = COLORS.wallLight;
-  ctx.fillRect(dx + 8, dy - 8, dw - 16, 6);
-  ctx.fillStyle = COLORS.amberDim;
-  ctx.font = '5px monospace';
-  ctx.fillText('AFT', dx + 14, dy - 3);
-}
-
-function drawBooth() {
-  // Corner booth (left side)
-  ctx.fillStyle = COLORS.boothDark;
-  ctx.beginPath();
-  ctx.moveTo(0, 60);
-  ctx.lineTo(50, 60);
-  ctx.lineTo(50, 130);
-  ctx.lineTo(0, 130);
-  ctx.fill();
-
-  // Booth table
-  ctx.fillStyle = COLORS.counterDark;
-  ctx.fillRect(5, 80, 40, 15);
-  ctx.fillStyle = COLORS.counterMid;
-  ctx.fillRect(5, 78, 40, 3);
-}
-
-function drawCounter() {
+  for (let x = 0; x < 320; x += 16) { ctx.beginPath(); ctx.moveTo(x, 130); ctx.lineTo(x, 200); ctx.stroke(); }
+  // Door
+  const dx = 262, dy = 15, dw = 42, dh = 115;
+  ctx.fillStyle = '#4a3418'; ctx.fillRect(dx, dy, dw, dh);
+  ctx.fillStyle = '#1a1004'; ctx.fillRect(dx + 4, dy + 4, dw - 8, dh - 8);
+  ctx.fillStyle = C.accentDim; ctx.fillRect(dx + dw - 12, dy + dh/2, 3, 3);
+  ctx.fillStyle = C.wallLight; ctx.fillRect(dx + 8, dy - 8, dw - 16, 6);
+  ctx.fillStyle = C.accentDim; ctx.font = '5px monospace'; ctx.fillText('AFT', dx + 14, dy - 3);
+  // Booth
+  ctx.fillStyle = '#2a1c0a'; ctx.beginPath(); ctx.moveTo(0, 60); ctx.lineTo(50, 60); ctx.lineTo(50, 130); ctx.lineTo(0, 130); ctx.fill();
+  ctx.fillStyle = C.counter; ctx.fillRect(5, 80, 40, 15); ctx.fillStyle = C.counterMid; ctx.fillRect(5, 78, 40, 3);
+  // Counter
   const cy = 95;
-  // Counter top
-  ctx.fillStyle = COLORS.counterMid;
-  ctx.fillRect(40, cy, 160, 8);
-  ctx.fillStyle = COLORS.counterLight;
-  ctx.fillRect(40, cy, 160, 2);
-  
-  // Counter front
-  ctx.fillStyle = COLORS.counterDark;
-  ctx.fillRect(40, cy + 8, 160, 35);
-  
-  // Wood grain
+  ctx.fillStyle = C.counterMid; ctx.fillRect(40, cy, 160, 8);
+  ctx.fillStyle = C.counterLight; ctx.fillRect(40, cy, 160, 2);
+  ctx.fillStyle = C.counter; ctx.fillRect(40, cy + 8, 160, 35);
   ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  for (let i = 0; i < 8; i++) {
-    ctx.beginPath();
-    ctx.moveTo(40 + i * 20, cy + 8);
-    ctx.lineTo(40 + i * 20, cy + 43);
-    ctx.stroke();
-  }
-}
-
-function drawStools() {
-  const stools = [60, 90, 120, 150];
-  stools.forEach(sx => {
-    // Seat
-    ctx.fillStyle = COLORS.stoolMid;
-    ctx.fillRect(sx, 135, 16, 6);
-    ctx.fillStyle = COLORS.stoolDark;
-    ctx.fillRect(sx, 141, 16, 2);
-    // Legs
-    ctx.fillStyle = COLORS.stoolDark;
-    ctx.fillRect(sx + 2, 141, 2, 18);
-    ctx.fillRect(sx + 12, 141, 2, 18);
+  for (let i = 0; i < 8; i++) { ctx.beginPath(); ctx.moveTo(40 + i*20, cy+8); ctx.lineTo(40 + i*20, cy+43); ctx.stroke(); }
+  // Stools
+  [60, 90, 120, 150].forEach(sx => {
+    ctx.fillStyle = '#4a3418'; ctx.fillRect(sx, 135, 16, 6);
+    ctx.fillStyle = '#2a1e0a'; ctx.fillRect(sx, 141, 16, 2);
+    ctx.fillStyle = '#2a1e0a'; ctx.fillRect(sx+2, 141, 2, 18); ctx.fillRect(sx+12, 141, 2, 18);
   });
-}
-
-function drawBottles() {
-  const bottles = [
-    {x: 50, color: COLORS.bottleGreen},
-    {x: 60, color: '#4a2a14'},
-    {x: 70, color: COLORS.bottleGreen},
-    {x: 165, color: '#4a2a14'},
-    {x: 175, color: COLORS.bottleGreen},
-    {x: 185, color: '#5a3a1a'}
-  ];
-  
-  bottles.forEach(b => {
-    // Bottle body
-    ctx.fillStyle = b.color;
-    ctx.fillRect(b.x, 80, 6, 15);
-    // Neck
-    ctx.fillRect(b.x + 2, 76, 2, 4);
-    // Highlight (glints with phase)
-    const glint = Math.sin(glintPhase + b.x) > 0.6;
-    if (glint) {
-      ctx.fillStyle = b.color === COLORS.bottleGreen ? COLORS.bottleHighlight : '#8a6a40';
-      ctx.fillRect(b.x + 1, 82, 1, 8);
-    }
+  // Bottles
+  [{x:50,c:'#2a4a30'},{x:60,c:'#4a2a14'},{x:70,c:'#2a4a30'},{x:165,c:'#4a2a14'},{x:175,c:'#2a4a30'},{x:185,c:'#5a3a1a'}].forEach(b => {
+    ctx.fillStyle = b.c; ctx.fillRect(b.x, 80, 6, 15); ctx.fillRect(b.x+2, 76, 2, 4);
+    if (Math.sin(glintPhase + b.x) > 0.6) { ctx.fillStyle = b.c === '#2a4a30' ? '#4a7a50' : '#8a6a40'; ctx.fillRect(b.x+1, 82, 1, 8); }
   });
-}
-
-function drawCandles() {
-  // Two candles on the counter
-  const candles = [{x: 100, y: 90}, {x: 140, y: 90}];
-  candles.forEach(c => {
-    // Candle base
-    ctx.fillStyle = COLORS.stoolMid;
-    ctx.fillRect(c.x, c.y, 3, 5);
-    
-    // Flame (flickering)
+  // Candles
+  [{x:100,y:90},{x:140,y:90}].forEach(c => {
+    ctx.fillStyle = '#4a3418'; ctx.fillRect(c.x, c.y, 3, 5);
     const flicker = Math.sin(candlePhase + c.x) * 0.5 + Math.random() * 0.5;
     const flameH = 4 + flicker;
-    
-    ctx.fillStyle = COLORS.candleFlame;
-    ctx.fillRect(c.x + 1, c.y - flameH, 1, flameH);
-    
-    // Glow
+    ctx.fillStyle = '#ffc040'; ctx.fillRect(c.x+1, c.y-flameH, 1, flameH);
     const glowR = 8 + flicker * 3;
-    const grad = ctx.createRadialGradient(c.x + 1, c.y - flameH/2, 0, c.x + 1, c.y - flameH/2, glowR);
-    grad.addColorStop(0, 'rgba(255,192,64,0.15)');
-    grad.addColorStop(1, 'rgba(255,128,32,0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(c.x - glowR, c.y - flameH - glowR, glowR * 2, glowR * 2);
+    const g2 = ctx.createRadialGradient(c.x+1, c.y-flameH/2, 0, c.x+1, c.y-flameH/2, glowR);
+    g2.addColorStop(0, 'rgba(255,192,64,0.15)'); g2.addColorStop(1, 'rgba(255,128,32,0)');
+    ctx.fillStyle = g2; ctx.fillRect(c.x-glowR, c.y-flameH-glowR, glowR*2, glowR*2);
   });
+  // Riker
+  drawRiker();
+  // Vignette
+  const vg = ctx.createRadialGradient(160, 80, 50, 160, 100, 180);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.6, 'rgba(0,0,0,0.2)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
 }
 
 function drawRiker() {
   const rx = 180, ry = 72;
-  
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.fillRect(rx - 2, 128, 16, 4);
-  
-  // Legs
-  ctx.fillStyle = COLORS.rikerPants;
-  ctx.fillRect(rx, 110, 5, 20);
-  ctx.fillRect(rx + 7, 110, 5, 20);
-  
-  // Jacket (torso)
-  ctx.fillStyle = COLORS.rikerJacket;
-  ctx.fillRect(rx - 2, 85, 16, 26);
-  // Jacket collar
-  ctx.fillStyle = '#2a2a3a';
-  ctx.fillRect(rx + 5, 85, 3, 8);
-  
-  // Arms
-  ctx.fillRect(rx - 3, 88, 3, 18);
-  ctx.fillRect(rx + 14, 88, 3, 18);
-  
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(rx-2, 128, 16, 4);
+  ctx.fillStyle = '#1a1a2a'; ctx.fillRect(rx, 110, 5, 20); ctx.fillRect(rx+7, 110, 5, 20);
+  ctx.fillStyle = '#3a3a4a'; ctx.fillRect(rx-2, 85, 16, 26);
+  ctx.fillStyle = '#2a2a3a'; ctx.fillRect(rx+5, 85, 3, 8);
+  ctx.fillRect(rx-3, 88, 3, 18); ctx.fillRect(rx+14, 88, 3, 18);
+  ctx.fillStyle = '#c8a878'; ctx.fillRect(rx+2, 72, 10, 12);
+  ctx.fillStyle = '#3a2a1a'; ctx.fillRect(rx+2, 72, 10, 3); ctx.fillRect(rx+2, 74, 2, 2); ctx.fillRect(rx+10, 74, 2, 2);
+  ctx.fillStyle = '#2a1a0a'; ctx.fillRect(rx+3, 79, 8, 3);
+  ctx.fillStyle = '#000'; ctx.fillRect(rx+4, 77, 1, 1); ctx.fillRect(rx+8, 77, 1, 1);
+  ctx.fillStyle = '#7a5a30'; ctx.fillRect(rx+12, 96, 4, 6);
+  ctx.fillStyle = 'rgba(200,200,220,0.5)'; ctx.fillRect(rx-3, 95, 3, 4);
+}
+
+// ── AFT DECK ──
+function drawAftDeck() {
+  const C = pal();
+  // Night sky backdrop
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, 90);
+  skyGrad.addColorStop(0, '#010308'); skyGrad.addColorStop(0.5, '#041018'); skyGrad.addColorStop(1, '#082028');
+  ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, 320, 90);
+  // Stars
+  for (let i = 0; i < 30; i++) {
+    const sx = (i * 37 + 13) % 320, sy = (i * 17 + 5) % 80;
+    const tw = Math.sin(candlePhase * 0.5 + i) > 0.7 ? 1 : 0;
+    if (tw) { ctx.fillStyle = '#a0c0d0'; ctx.fillRect(sx, sy, 1, 1); }
+  }
+  // Ocean horizon
+  const oceanGrad = ctx.createLinearGradient(0, 60, 0, 130);
+  oceanGrad.addColorStop(0, '#042030'); oceanGrad.addColorStop(1, '#062840');
+  ctx.fillStyle = oceanGrad; ctx.fillRect(0, 70, 320, 60);
+  // Moonlight shimmer on water
+  const moonX = 200;
+  for (let i = 0; i < 8; i++) {
+    const sh = Math.sin(oceanPhase + i * 0.8) * 3;
+    ctx.fillStyle = `rgba(180,200,220,${0.04 + i * 0.01})`;
+    ctx.fillRect(moonX - 20 + i * 5, 75 + i * 3 + sh, 15, 1);
+  }
+  // Deck floor
+  ctx.fillStyle = '#0a2020'; ctx.fillRect(0, 130, 320, 70);
+  // Deck planks
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  for (let x = 0; x < 320; x += 14) { ctx.beginPath(); ctx.moveTo(x, 130); ctx.lineTo(x, 200); ctx.stroke(); }
+  for (let y = 135; y < 200; y += 12) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke(); }
+  // Deck rail
+  ctx.fillStyle = '#1a3a30'; ctx.fillRect(0, 58, 320, 4); ctx.fillRect(0, 70, 320, 3);
+  // Rail posts
+  for (let x = 20; x < 320; x += 60) { ctx.fillStyle = '#2a4a38'; ctx.fillRect(x, 58, 3, 16); }
+  // Life ring
+  const lrx = 230, lry = 55;
+  ctx.fillStyle = '#cc4422'; ctx.beginPath(); ctx.arc(lrx, lry, 10, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#020812'; ctx.beginPath(); ctx.arc(lrx, lry, 5, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#eeeeee'; ctx.font = '4px monospace'; ctx.fillText('SS COCAPN', lrx-10, lry+1);
+  // Weather station
+  const wxx = 40, wyy = 35;
+  ctx.fillStyle = '#2a4a38'; ctx.fillRect(wxx, wyy, 10, 3);
+  ctx.fillStyle = '#3a5a48'; ctx.fillRect(wxx+3, wyy+3, 4, 30);
+  // Anemometer cups
+  const spin = candlePhase * 2;
+  ctx.fillStyle = '#5a7a68';
+  ctx.fillRect(wxx+3 + Math.cos(spin)*4, wyy-3 + Math.sin(spin)*4, 2, 2);
+  ctx.fillRect(wxx+3 + Math.cos(spin+2.1)*4, wyy-3 + Math.sin(spin+2.1)*4, 2, 2);
+  ctx.fillRect(wxx+3 + Math.cos(spin+4.2)*4, wyy-3 + Math.sin(spin+4.2)*4, 2, 2);
+  // Door back to bar (left)
+  ctx.fillStyle = '#1a1208'; ctx.fillRect(0, 15, 35, 115);
+  ctx.fillStyle = '#3d2a14'; ctx.fillRect(4, 19, 27, 107);
+  ctx.fillStyle = '#1a1004'; ctx.fillRect(8, 23, 19, 99);
+  ctx.fillStyle = '#8a6a30'; ctx.fillRect(22, 65, 3, 3);
+  // Door to wheelhouse (center up)
+  ctx.fillStyle = '#0a3040'; ctx.fillRect(130, 2, 60, 35);
+  ctx.fillStyle = '#003858'; ctx.fillRect(134, 6, 52, 27);
+  ctx.fillStyle = '#226688'; ctx.font = '5px monospace'; ctx.fillText('WHEELHOUSE', 145, 22);
+  // Deckhand
+  drawDeckhand();
+  // Darkness overlay
+  const vg = ctx.createRadialGradient(160, 80, 40, 160, 120, 200);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.5, 'rgba(0,0,0,0.3)'); vg.addColorStop(1, 'rgba(0,0,0,0.6)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
+}
+
+function drawDeckhand() {
+  const rx = 148, ry = 80;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(rx-2, 138, 16, 4);
+  ctx.fillStyle = '#1a3040'; ctx.fillRect(rx, 120, 5, 18); ctx.fillRect(rx+7, 120, 5, 18);
+  ctx.fillStyle = '#2a4a3a'; ctx.fillRect(rx-2, 95, 16, 26);
+  ctx.fillStyle = '#1a3a2a'; ctx.fillRect(rx+5, 95, 3, 8);
+  ctx.fillRect(rx-3, 98, 3, 16); ctx.fillRect(rx+14, 98, 3, 16);
+  ctx.fillStyle = '#b89878'; ctx.fillRect(rx+2, 82, 10, 12);
+  ctx.fillStyle = '#2a1a0a'; ctx.fillRect(rx+2, 82, 10, 4);
+  ctx.fillStyle = '#000'; ctx.fillRect(rx+4, 87, 1, 1); ctx.fillRect(rx+8, 87, 1, 1);
+  // Holding a rope
+  ctx.fillStyle = '#6a5a3a'; ctx.fillRect(rx+14, 100, 8, 2);
+}
+
+// ── WHEELHOUSE ──
+function drawWheelhouse() {
+  const C = pal();
+  // Windows (large, wraparound)
+  const winGrad = ctx.createLinearGradient(0, 0, 0, 100);
+  winGrad.addColorStop(0, '#001830'); winGrad.addColorStop(0.5, '#002848'); winGrad.addColorStop(1, '#003860');
+  ctx.fillStyle = winGrad; ctx.fillRect(0, 0, 320, 100);
+  // Window frame
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 95, 320, 4); // sill
+  ctx.fillRect(105, 0, 3, 100); ctx.fillRect(212, 0, 3, 100); // mullions
+  ctx.fillRect(0, 48, 320, 2); // transom
+  // Night sky through windows
+  for (let i = 0; i < 15; i++) {
+    const sx = (i * 53 + 7) % 320, sy = (i * 19 + 3) % 45;
+    if (Math.sin(candlePhase * 0.3 + i) > 0.5) { ctx.fillStyle = '#88ccff'; ctx.fillRect(sx, sy, 1, 1); }
+  }
+  // Console (below windows)
+  const conGrad = ctx.createLinearGradient(0, 99, 0, 200);
+  conGrad.addColorStop(0, '#1a2838'); conGrad.addColorStop(0.5, '#0a1828'); conGrad.addColorStop(1, '#000810');
+  ctx.fillStyle = conGrad; ctx.fillRect(0, 99, 320, 101);
+  // Console panel lines
+  ctx.strokeStyle = 'rgba(68,204,255,0.15)';
+  for (let y = 110; y < 200; y += 15) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke(); }
+  // Helm wheel
+  const wx = 70, wy = 65, wr = 16;
+  ctx.fillStyle = '#3a2a08'; ctx.beginPath(); ctx.arc(wx, wy, wr, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#8b6914'; ctx.beginPath(); ctx.arc(wx, wy, wr-2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#5a4408'; ctx.beginPath(); ctx.arc(wx, wy, 3, 0, Math.PI*2); ctx.fill();
+  // Wheel spokes
+  ctx.strokeStyle = '#8b6914'; ctx.lineWidth = 1;
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + candlePhase * 0.02;
+    ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx + Math.cos(a)*(wr-2), wy + Math.sin(a)*(wr-2)); ctx.stroke();
+  }
+  // Radar display
+  const rdx = 145, rdy = 50, rdr = 20;
+  ctx.fillStyle = '#001a0a'; ctx.beginPath(); ctx.arc(rdx, rdy, rdr, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#00aa44'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(rdx, rdy, rdr-1, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(rdx, rdy, rdr*0.66, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(rdx, rdy, rdr*0.33, 0, Math.PI*2); ctx.stroke();
+  // Cross
+  ctx.beginPath(); ctx.moveTo(rdx-rdr, rdy); ctx.lineTo(rdx+rdr, rdy); ctx.moveTo(rdx, rdy-rdr); ctx.lineTo(rdx, rdy+rdr); ctx.stroke();
+  // Sweep line
+  const sweepA = radarPhase * 2;
+  ctx.strokeStyle = '#00ff66'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(rdx, rdy);
+  ctx.lineTo(rdx + Math.cos(sweepA) * rdr, rdy + Math.sin(sweepA) * rdr);
+  ctx.stroke();
+  // Blips
+  ctx.fillStyle = '#00ff66';
+  ctx.fillRect(rdx + 5, rdy - 8, 2, 2);
+  ctx.fillRect(rdx - 10, rdy + 6, 1, 1);
+  // Compass rose
+  const cx2 = 210, cy2 = 58;
+  ctx.fillStyle = '#0a0a00'; ctx.beginPath(); ctx.arc(cx2, cy2, 12, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx2, cy2, 11, 0, Math.PI*2); ctx.stroke();
+  ctx.fillStyle = '#c9a227'; ctx.font = '5px monospace';
+  ctx.fillText('N', cx2-1, cy2-6); ctx.fillText('S', cx2-1, cy2+10);
+  ctx.fillText('E', cx2+7, cy2+2); ctx.fillText('W', cx2-10, cy2+2);
+  // Compass needle
+  const na = candlePhase * 0.05 + 0.3;
+  ctx.strokeStyle = '#ff4422'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx2, cy2); ctx.lineTo(cx2 + Math.cos(na)*9, cy2 + Math.sin(na)*9); ctx.stroke();
+  // Radio console
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(250, 50, 35, 30);
+  ctx.fillStyle = '#2a2a2a'; ctx.fillRect(253, 53, 29, 24);
+  // Radio LED
+  const ledOn = Math.sin(candlePhase * 3) > 0;
+  ctx.fillStyle = ledOn ? '#44ff44' : '#0a2a0a'; ctx.fillRect(256, 56, 3, 3);
+  ctx.fillStyle = '#446688'; ctx.font = '4px monospace'; ctx.fillText('CH 16', 263, 60);
+  ctx.fillStyle = '#2a4a6a'; ctx.fillRect(256, 64, 23, 8);
+  // Nav charts (chartplotter screen)
+  const ncx = 130, ncy = 95;
+  ctx.fillStyle = '#0a2010'; ctx.fillRect(ncx, ncy, 55, 35);
+  ctx.strokeStyle = '#0a4020'; ctx.lineWidth = 1;
+  // Chart grid
+  for (let x = ncx; x < ncx+55; x += 8) { ctx.beginPath(); ctx.moveTo(x, ncy); ctx.lineTo(x, ncy+35); ctx.stroke(); }
+  for (let y = ncy; y < ncy+35; y += 8) { ctx.beginPath(); ctx.moveTo(ncx, y); ctx.lineTo(ncx+55, y); ctx.stroke(); }
+  // Coastline (simplified)
+  ctx.strokeStyle = '#00aa44'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ncx+5, ncy+8); ctx.lineTo(ncx+12, ncy+12); ctx.lineTo(ncx+18, ncy+8);
+  ctx.lineTo(ncx+25, ncy+15); ctx.lineTo(ncx+35, ncy+10); ctx.lineTo(ncx+45, ncy+18); ctx.lineTo(ncx+52, ncy+12);
+  ctx.stroke();
+  // Vessel position (blinking)
+  const blink = Math.sin(candlePhase * 4) > 0;
+  if (blink) {
+    ctx.fillStyle = '#ff4444'; ctx.beginPath(); ctx.arc(ncx+30, ncy+22, 2, 0, Math.PI*2); ctx.fill();
+  }
+  // Depth numbers
+  ctx.fillStyle = '#0a6030'; ctx.font = '3px monospace';
+  ctx.fillText('20m', ncx+8, ncy+22); ctx.fillText('40m', ncx+38, ncy+28);
+  // Doors
+  // Aft door (right)
+  ctx.fillStyle = '#1a2838'; ctx.fillRect(275, 15, 40, 120);
+  ctx.fillStyle = '#0a1828'; ctx.fillRect(279, 19, 32, 112);
+  ctx.fillStyle = '#226688'; ctx.fillRect(302, 65, 3, 3);
+  // Galley hatch (floor left)
+  ctx.fillStyle = '#1a1828'; ctx.fillRect(5, 155, 50, 40);
+  ctx.fillStyle = '#0a0818'; ctx.fillRect(9, 159, 42, 32);
+  ctx.fillStyle = '#226688'; ctx.font = '5px monospace'; ctx.fillText('GALLEY', 18, 178);
+  // Handle
+  ctx.fillStyle = '#44ccff'; ctx.fillRect(25, 185, 10, 2);
+  // Captain
+  drawCaptain();
+  // Glow from instruments
+  const ig = ctx.createRadialGradient(160, 80, 40, 160, 100, 150);
+  ig.addColorStop(0, 'rgba(68,204,255,0.08)'); ig.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = ig; ctx.fillRect(0, 0, 320, 200);
+  // Vignette
+  const vg = ctx.createRadialGradient(160, 80, 50, 160, 120, 200);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.6, 'rgba(0,0,0,0.2)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
+}
+
+function drawCaptain() {
+  const rx = 85, ry = 72;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(rx-2, 128, 16, 4);
+  ctx.fillStyle = '#0a1828'; ctx.fillRect(rx, 110, 5, 20); ctx.fillRect(rx+7, 110, 5, 20);
+  // Captain's jacket (dark navy with gold)
+  ctx.fillStyle = '#102040'; ctx.fillRect(rx-2, 85, 16, 26);
+  ctx.fillStyle = '#ffd700'; ctx.fillRect(rx+5, 85, 3, 8); // gold trim
+  ctx.fillRect(rx-3, 88, 3, 16); ctx.fillRect(rx+14, 88, 3, 16);
   // Head
-  ctx.fillStyle = COLORS.rikerSkin;
-  ctx.fillRect(rx + 2, 72, 10, 12);
-  
-  // Hair
-  ctx.fillStyle = '#3a2a1a';
-  ctx.fillRect(rx + 2, 72, 10, 3);
-  ctx.fillRect(rx + 2, 74, 2, 2);
-  ctx.fillRect(rx + 10, 74, 2, 2);
-  
+  ctx.fillStyle = '#c8a878'; ctx.fillRect(rx+2, 72, 10, 12);
+  // Captain's hat
+  ctx.fillStyle = '#0a0a18'; ctx.fillRect(rx, 68, 14, 4);
+  ctx.fillStyle = '#ffd700'; ctx.fillRect(rx+4, 70, 6, 1);
   // Beard
-  ctx.fillStyle = '#2a1a0a';
-  ctx.fillRect(rx + 3, 79, 8, 3);
-  
-  // Eyes (tiny)
-  ctx.fillStyle = '#000';
-  ctx.fillRect(rx + 4, 77, 1, 1);
-  ctx.fillRect(rx + 8, 77, 1, 1);
-  
-  // Clipboard in hand
-  ctx.fillStyle = COLORS.counterLight;
-  ctx.fillRect(rx + 12, 96, 4, 6);
-  
-  // Glass in other hand
-  ctx.fillStyle = 'rgba(200,200,220,0.5)';
-  ctx.fillRect(rx - 3, 95, 3, 4);
+  ctx.fillStyle = '#3a2a1a'; ctx.fillRect(rx+3, 79, 8, 4);
+  // Eyes
+  ctx.fillStyle = '#000'; ctx.fillRect(rx+4, 77, 1, 1); ctx.fillRect(rx+8, 77, 1, 1);
 }
 
-function drawDarkness() {
-  // Vignette / ambient dark
-  const grad = ctx.createRadialGradient(160, 80, 50, 160, 100, 180);
-  grad.addColorStop(0, 'rgba(0,0,0,0)');
-  grad.addColorStop(0.6, 'rgba(0,0,0,0.2)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.5)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 320, 200);
+// ── GALLEY ──
+function drawGalley() {
+  const C = pal();
+  // Wall
+  const wallGrad = ctx.createLinearGradient(0, 0, 0, 130);
+  wallGrad.addColorStop(0, C.wallDark); wallGrad.addColorStop(0.5, C.wallMid); wallGrad.addColorStop(1, C.wallLight);
+  ctx.fillStyle = wallGrad; ctx.fillRect(0, 0, 320, 130);
+  // Wood cabinet lines
+  ctx.strokeStyle = 'rgba(10,5,0,0.4)';
+  for (let x = 0; x < 320; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 130); ctx.stroke(); }
+  // Cabinet doors
+  ctx.fillStyle = C.wallLight;
+  ctx.fillRect(4, 4, 18, 18); ctx.fillRect(28, 4, 18, 18);
+  ctx.fillRect(250, 4, 18, 18); ctx.fillRect(274, 4, 18, 18);
+  // Floor
+  ctx.fillStyle = C.floor; ctx.fillRect(0, 130, 320, 70);
+  ctx.strokeStyle = 'rgba(10,5,0,0.5)';
+  for (let x = 0; x < 320; x += 14) { ctx.beginPath(); ctx.moveTo(x, 130); ctx.lineTo(x, 200); ctx.stroke(); }
+  // Warm light source (overhead lamp)
+  const lampX = 160, lampY = 8;
+  ctx.fillStyle = '#ff9020'; ctx.fillRect(lampX-4, lampY, 8, 3);
+  ctx.fillStyle = '#5a2c0a'; ctx.fillRect(lampX-3, lampY+3, 6, 2);
+  // Lamp glow
+  const lg = ctx.createRadialGradient(lampX, lampY+5, 5, lampX, 60, 120);
+  lg.addColorStop(0, 'rgba(255,144,32,0.15)'); lg.addColorStop(1, 'rgba(255,144,32,0)');
+  ctx.fillStyle = lg; ctx.fillRect(0, 0, 320, 200);
+  // Coffee maker
+  const cmx = 35, cmy = 50;
+  ctx.fillStyle = '#222222'; ctx.fillRect(cmx, cmy, 14, 20);
+  ctx.fillStyle = '#333333'; ctx.fillRect(cmx+2, cmy+2, 10, 16);
+  // Pot
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cmx+3, cmy+12, 8, 6);
+  // Coffee drop animation
+  const dropY = cmy + 10 + (Math.sin(candlePhase * 3) + 1) * 2;
+  ctx.fillStyle = '#3a1a08'; ctx.fillRect(cmx+6, dropY, 1, 2);
+  // LED
+  ctx.fillStyle = Math.sin(candlePhase*4) > 0 ? '#ff4422' : '#440000';
+  ctx.fillRect(cmx+10, cmy+4, 2, 2);
+  // Propane stove
+  const sx2 = 80, sy2 = 45;
+  ctx.fillStyle = '#666666'; ctx.fillRect(sx2, sy2, 24, 28);
+  ctx.fillStyle = '#888888'; ctx.fillRect(sx2+2, sy2+2, 20, 24);
+  // Burners
+  ctx.fillStyle = '#333333'; ctx.beginPath(); ctx.arc(sx2+8, sy2+10, 4, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(sx2+16, sy2+10, 4, 0, Math.PI*2); ctx.fill();
+  // Flame on one burner
+  const flameH = 3 + Math.sin(candlePhase * 6) * 1;
+  ctx.fillStyle = '#ff6020'; ctx.beginPath(); ctx.arc(sx2+8, sy2+8, flameH, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#ffe040'; ctx.beginPath(); ctx.arc(sx2+8, sy2+8, flameH*0.5, 0, Math.PI*2); ctx.fill();
+  // Gimbals
+  ctx.fillStyle = '#444444'; ctx.fillRect(sx2-2, sy2+14, 2, 8); ctx.fillRect(sx2+24, sy2+14, 2, 8);
+  // Galley table
+  const tx = 140, ty = 100;
+  ctx.fillStyle = '#3a2208'; ctx.fillRect(tx, ty, 90, 6);
+  ctx.fillStyle = '#5a380c'; ctx.fillRect(tx, ty, 90, 2);
+  // Fiddles (rim)
+  ctx.fillStyle = '#2a1804'; ctx.fillRect(tx, ty-2, 90, 2);
+  // Legs
+  ctx.fillStyle = '#3a2208'; ctx.fillRect(tx+5, ty+6, 3, 24); ctx.fillRect(tx+82, ty+6, 3, 24);
+  // Bench
+  ctx.fillStyle = '#2a1804'; ctx.fillRect(tx-8, ty+18, 8, 14); ctx.fillRect(tx+90, ty+18, 8, 14);
+  // Mug on table
+  ctx.fillStyle = '#cccccc'; ctx.fillRect(tx+40, ty-5, 5, 5);
+  ctx.fillStyle = '#3a1a08'; ctx.fillRect(tx+41, ty-4, 3, 3);
+  // Steam from mug
+  const steamY = ty - 8 + Math.sin(candlePhase * 2) * 2;
+  ctx.fillStyle = 'rgba(200,200,200,0.2)'; ctx.fillRect(tx+42, steamY, 1, 3);
+  // Porthole
+  const px = 260, py = 45, pr = 18;
+  // Frame
+  ctx.fillStyle = '#4a3418'; ctx.beginPath(); ctx.arc(px, py, pr+2, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#2a1a08'; ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI*2); ctx.fill();
+  // Glass — animated ocean gradient
+  for (let r = pr-2; r > 0; r--) {
+    const t = (r + oceanPhase * 20) / pr;
+    const wave = Math.sin(r * 0.5 + oceanPhase * 3) * 0.3 + 0.5;
+    const r2 = Math.floor(10 + wave * 30);
+    const g2 = Math.floor(40 + wave * 60);
+    const b2 = Math.floor(80 + wave * 80);
+    ctx.fillStyle = `rgb(${r2},${g2},${b2})`;
+    ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+  }
+  // Wave lines on porthole
+  ctx.strokeStyle = 'rgba(180,220,240,0.3)'; ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    const wy = py - 4 + i * 6 + Math.sin(oceanPhase + i) * 2;
+    ctx.beginPath(); ctx.moveTo(px-12, wy); ctx.bezierCurveTo(px-6, wy-2, px+6, wy+2, px+12, wy); ctx.stroke();
+  }
+  // Rivets on porthole
+  ctx.fillStyle = '#8a6a30';
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    ctx.fillRect(px + Math.cos(a)*(pr+1) - 1, py + Math.sin(a)*(pr+1) - 1, 2, 2);
+  }
+  // Doors
+  // Wheelhouse ladder (left)
+  ctx.fillStyle = '#1a0e04'; ctx.fillRect(0, 15, 35, 120);
+  ctx.fillStyle = '#3a2208'; ctx.fillRect(4, 19, 27, 112);
+  // Ladder rungs
+  ctx.fillStyle = '#5a380c';
+  for (let ly = 30; ly < 125; ly += 12) { ctx.fillRect(8, ly, 19, 2); }
+  ctx.fillStyle = '#885010'; ctx.font = '5px monospace'; ctx.fillText('UP', 16, 140);
+  // Aft door (right)
+  ctx.fillStyle = '#1a0e04'; ctx.fillRect(275, 15, 45, 120);
+  ctx.fillStyle = '#3a2208'; ctx.fillRect(279, 19, 37, 112);
+  ctx.fillStyle = '#885010'; ctx.fillRect(305, 65, 3, 3);
+  // Cook
+  drawCook();
+  // Warm vignette
+  const vg = ctx.createRadialGradient(160, 80, 40, 160, 120, 200);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.5, 'rgba(20,10,0,0.2)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
 }
 
-// ── Animation loop ──
-function animate() {
-  drawScene();
-  requestAnimationFrame(animate);
+function drawCook() {
+  const rx = 100, ry = 82;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(rx-2, 138, 16, 4);
+  ctx.fillStyle = '#3a2208'; ctx.fillRect(rx, 120, 5, 18); ctx.fillRect(rx+7, 120, 5, 18);
+  // Apron
+  ctx.fillStyle = '#6a5a4a'; ctx.fillRect(rx-2, 95, 16, 26);
+  ctx.fillStyle = '#5a4a3a'; ctx.fillRect(rx+5, 95, 3, 26);
+  // Arms
+  ctx.fillStyle = '#5a4a3a'; ctx.fillRect(rx-3, 98, 3, 16); ctx.fillRect(rx+14, 98, 3, 16);
+  // Head
+  ctx.fillStyle = '#d8b888'; ctx.fillRect(rx+2, 82, 10, 12);
+  // Chef's hat
+  ctx.fillStyle = '#eeeeee'; ctx.fillRect(rx+1, 76, 12, 6);
+  ctx.fillStyle = '#dddddd'; ctx.fillRect(rx, 74, 14, 4);
+  // Mustache
+  ctx.fillStyle = '#3a2a1a'; ctx.fillRect(rx+3, 88, 8, 2);
+  // Eyes
+  ctx.fillStyle = '#000'; ctx.fillRect(rx+4, 85, 1, 1); ctx.fillRect(rx+8, 85, 1, 1);
+  // Ladle in hand
+  ctx.fillStyle = '#888888'; ctx.fillRect(rx+14, 100, 8, 2);
+  ctx.fillStyle = '#aaaaaa'; ctx.fillRect(rx+20, 98, 4, 5);
 }
 
-// ── Verb System ──
-const verbBar = document.getElementById('verb-bar');
+// ════════════════════════════════════════════════════════════
+// HOTSPOT MANAGEMENT
+// ════════════════════════════════════════════════════════════
+
+const hotspotsLayer = document.getElementById('hotspots-layer');
+
+function loadHotspots() {
+  hotspotsLayer.innerHTML = '';
+  const room = ROOMS[currentRoom];
+  room.hotspots.forEach(hs => {
+    const el = document.createElement('div');
+    el.className = 'hotspot';
+    el.id = hs.id;
+    el.style.left = hs.x; el.style.top = hs.y;
+    el.style.width = hs.w; el.style.height = hs.h;
+    el.title = hs.name;
+    hotspotsLayer.appendChild(el);
+  });
+  // Re-attach click handler
+  document.querySelectorAll('.hotspot').forEach(hs => {
+    hs.addEventListener('click', () => handleHotspotClick(hs.id));
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// INTERACTION RESPONSES
+// ════════════════════════════════════════════════════════════
+
+function getResponse(verb, hsId) {
+  const room = currentRoom;
+  
+  // Check inventory item usage
+  if (verb === 'use' && hsId === '__inventory_coffee__') {
+    return 'You take a sip. The coffee is strong enough to dissolve a spoon. You feel alert.';
+  }
+
+  // ── BAR RAIL responses ──
+  if (room === 'bar-rail') {
+    const r = {
+      'look at': {
+        'hs-bar-counter': 'The bar is sticky with spilled beer and ringed with glass marks.',
+        'hs-bar-stool': 'The stool creaks. Someone sat here all night.',
+        'hs-door-aft': 'A heavy wooden door. A faded sign reads "AFT DECK". Salt air seeps through the cracks.',
+        'hs-riker': 'A weathered first officer in a faded jacket. He\'s turning a glass, checking a clipboard.'
+      },
+      'use': {
+        'hs-bar-counter': 'You lean on the bar. The wood is solid, worn smooth by decades of elbows.',
+        'hs-bar-stool': 'You sit. The stool creaks but holds.',
+        'hs-door-aft': '__EXIT__',
+        'hs-riker': 'Riker glances at you. "Not now."'
+      },
+      'talk to': {
+        'hs-bar-counter': 'You talk to the bar. The bar does not respond.',
+        'hs-bar-stool': 'You whisper to the stool. It\'s just a stool.',
+        'hs-door-aft': 'You speak to the door. It remains a door.',
+        'hs-riker': '__OPEN_DIALOGUE__'
+      },
+      'walk to': {
+        'hs-bar-counter': 'You walk to the bar.',
+        'hs-bar-stool': 'You walk to the stool.',
+        'hs-door-aft': '__EXIT__',
+        'hs-riker': 'You approach Riker. He looks up from his clipboard.'
+      },
+      'pick up': {
+        'hs-bar-counter': 'Your fingers brush the counter. Nothing to pick up.',
+        'hs-bar-stool': 'You try to lift the stool. It\'s bolted down.',
+        'hs-door-aft': 'You can\'t pick up a door.',
+        'hs-riker': 'Riker steps back. "Don\'t."'
+      },
+      'push': {'hs-bar-counter':'The bar doesn\'t budge.','hs-bar-stool':'The stool scrapes.','hs-door-aft':'The door resists.','hs-riker':'Riker blocks you. "Enough."'},
+      'pull': {'hs-bar-counter':'Nothing happens.','hs-bar-stool':'You pull the stool closer.','hs-door-aft':'The door won\'t open from here.','hs-riker':'Riker pulls away.'},
+      'open': {'hs-bar-counter':'Nothing to open.','hs-bar-stool':'Can\'t open a stool.','hs-door-aft':'__EXIT__','hs-riker':'"I\'m not a door."'},
+      'close': {'hs-bar-counter':'Nothing to close.','hs-bar-stool':'Nothing to close.','hs-door-aft':'Already closed.','hs-riker':'Riker turns away.'},
+      'give': {'hs-bar-counter':'You have nothing to give.','hs-bar-stool':'Nothing to give.','hs-door-aft':'Nothing to give.','hs-riker':'Riker raises an eyebrow. "Offering?"'}
+    };
+    return r[verb]?.[hsId];
+  }
+
+  // ── AFT DECK responses ──
+  if (room === 'aft-deck') {
+    const r = {
+      'look at': {
+        'hs-deck-rail': 'The rail is salt-crusted and solid. The ocean stretches to the horizon.',
+        'hs-life-ring': 'A orange life ring stamped "SS COCAPN". It\'s seen better days.',
+        'hs-weather-station': 'A compact weather station. Wind cups spin, temperature gauge reads cool.',
+        'hs-door-bar': 'The door back to the bar. Warm light leaks underneath.',
+        'hs-door-wheelhouse': 'A door leading up to the wheelhouse. Blue light glows from within.',
+        'hs-deckhand': 'A lean deckhand in oilskins, coiling rope and watching the sky.'
+      },
+      'use': {
+        'hs-deck-rail': 'You lean on the rail. The boat rocks gently. Salt spray hits your face.',
+        'hs-life-ring': 'You check the life ring. Solid, ready. Good.',
+        'hs-weather-station': 'You check the readout: 12 knots NW, 58°F, falling barometer.',
+        'hs-door-bar': '__EXIT__',
+        'hs-door-wheelhouse': '__EXIT__',
+        'hs-deckhand': 'The deckhand nods. "Busy."'
+      },
+      'talk to': {
+        'hs-deck-rail': 'The ocean whispers. It does not answer back.',
+        'hs-life-ring': 'You talk to the life ring. It\'s a life ring.',
+        'hs-weather-station': 'You murmur to the instruments. They tick and spin.',
+        'hs-door-bar': 'Doors don\'t talk.',
+        'hs-door-wheelhouse': 'Doors don\'t talk.',
+        'hs-deckhand': '__OPEN_DIALOGUE__'
+      },
+      'walk to': {
+        'hs-deck-rail': 'You walk to the rail and look out over dark water.',
+        'hs-life-ring': 'You walk to the life ring.',
+        'hs-weather-station': 'You walk to the weather station.',
+        'hs-door-bar': '__EXIT__',
+        'hs-door-wheelhouse': '__EXIT__',
+        'hs-deckhand': 'You walk over to the deckhand.'
+      },
+      'pick up': {
+        'hs-deck-rail': 'The rail is bolted down.',
+        'hs-life-ring': '__PICKUP_LIFE_RING__',
+        'hs-weather-station': 'It\'s mounted. Can\'t take it.',
+        'hs-door-bar': 'It\'s a door.',
+        'hs-door-wheelhouse': 'It\'s a door.',
+        'hs-deckhand': 'The deckhand sidesteps. "What are you doing?"'
+      },
+      'push': {'hs-deck-rail':'Solid.','hs-life-ring':'It swings on its hook.','hs-weather-station':'Mounted tight.','hs-door-bar':'__EXIT__','hs-door-wheelhouse':'__EXIT__','hs-deckhand':'The deckhand dodges.'},
+      'pull': {'hs-deck-rail':'Solid.','hs-life-ring':'You pull the ring off its hook.','hs-weather-station':'Won\'t budge.','hs-door-bar':'__EXIT__','hs-door-wheelhouse':'__EXIT__','hs-deckhand':'"Hey!"'},
+      'open': {'hs-deck-rail':'Can\'t open a rail.','hs-life-ring':'Can\'t open a ring.','hs-weather-station':'No lid.','hs-door-bar':'__EXIT__','hs-door-wheelhouse':'__EXIT__','hs-deckhand':'"Excuse me?"'},
+      'close': {'hs-deck-rail':'Nothing to close.','hs-life-ring':'Nothing to close.','hs-weather-station':'Nothing to close.','hs-door-bar':'Already closed.','hs-door-wheelhouse':'Already closed.','hs-deckhand':'The deckhand turns back to work.'},
+      'give': {'hs-deck-rail':'Nothing to give.','hs-life-ring':'Nothing to give.','hs-weather-station':'Nothing to give.','hs-door-bar':'Nothing to give.','hs-door-wheelhouse':'Nothing to give.','hs-deckhand':'The deckhand looks confused.'}
+    };
+    return r[verb]?.[hsId];
+  }
+
+  // ── WHEELHOUSE responses ──
+  if (room === 'wheelhouse') {
+    const r = {
+      'look at': {
+        'hs-helm-wheel': 'Polished mahogany, eight spokes, brass hub. The wheel has steered through fifty storms.',
+        'hs-radar-display': 'Phosphor green sweep. Two blips — likely fishing boats. The sweep rotates endlessly.',
+        'hs-compass-rose': 'A brass compass in a gimbaled binnacle. The needle holds steady at 312°.',
+        'hs-radio-console': 'VHF radio, channel 16 guarded. A green LED blinks. Static and distant voices.',
+        'hs-nav-charts': 'A chartplotter showing the Alaska coast. Your position blinks red near Resurrection Bay.',
+        'hs-door-aft-wh': 'A door leading aft to the deck. Cold air seeps under it.',
+        'hs-door-galley': 'A floor hatch with a ladder leading down to the galley. Warm air rises.',
+        'hs-captain': 'The Captain stands at the helm, hands behind his back. Gold trim on navy blue.'
+      },
+      'use': {
+        'hs-helm-wheel': 'You grip the wheel. It\'s warm from the Captain\'s hands. The boat responds.',
+        'hs-radar-display': 'You study the sweep. Two contacts to the northeast, heading south.',
+        'hs-compass-rose': 'You check the compass. 312° northwest. Steady as she goes.',
+        'hs-radio-console': 'You pick up the handset. Static. A distant voice calls "Securite, securite."',
+        'hs-nav-charts': 'You zoom in on the chart. Depth contours, a wreck marked with an X. You\'re in 20 fathoms.',
+        'hs-door-aft-wh': '__EXIT__',
+        'hs-door-galley': '__EXIT__',
+        'hs-captain': 'The Captain glances at you. "Hands off the helm."'
+      },
+      'talk to': {
+        'hs-helm-wheel': 'You talk to the wheel. The wheel says nothing, but it\'s heard a lot.',
+        'hs-radar-display': 'Beep. Beep. The radar ignores you.',
+        'hs-compass-rose': 'North is north. It doesn\'t need conversation.',
+        'hs-radio-console': '—ksshhht— ...vessel on course two-seven-zero... —ksshhht—',
+        'hs-nav-charts': 'The chart doesn\'t talk back.',
+        'hs-door-aft-wh': 'Doors don\'t talk.',
+        'hs-door-galley': 'Doors don\'t talk.',
+        'hs-captain': '__OPEN_DIALOGUE__'
+      },
+      'walk to': {
+        'hs-helm-wheel': 'You walk to the helm.',
+        'hs-radar-display': 'You walk to the radar.',
+        'hs-compass-rose': 'You walk to the compass.',
+        'hs-radio-console': 'You walk to the radio.',
+        'hs-nav-charts': 'You walk to the chartplotter.',
+        'hs-door-aft-wh': '__EXIT__',
+        'hs-door-galley': '__EXIT__',
+        'hs-captain': 'You approach the Captain.'
+      },
+      'pick up': {
+        'hs-helm-wheel': 'The wheel is solidly mounted. The Captain clears his throat.',
+        'hs-radar-display': 'Mounted to the console.',
+        'hs-compass-rose': 'Gimbaled in place.',
+        'hs-radio-console': 'Bolted down.',
+        'hs-nav-charts': 'Mounted in the console.',
+        'hs-door-aft-wh': 'It\'s a door.',
+        'hs-door-galley': 'It\'s a hatch.',
+        'hs-captain': 'The Captain stares at you. "Don\'t."'
+      },
+      'push': {'hs-helm-wheel':'The wheel turns slightly. The Captain adjusts it back.','hs-radar-display':'Buttons don\'t press easily.','hs-compass-rose':'The binnacle is solid.','hs-radio-console':'Static crackles.','hs-nav-charts':'The screen doesn\'t move.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-captain':'The Captain doesn\'t budge.'},
+      'pull': {'hs-helm-wheel':'You pull the wheel. The boat lurches.','hs-radar-display':'It\'s mounted.','hs-compass-rose':'Solid.','hs-radio-console':'Mounted.','hs-nav-charts':'Mounted.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-captain':'The Captain steps back.'},
+      'open': {'hs-helm-wheel':'Can\'t open a wheel.','hs-radar-display':'Can\'t open a screen.','hs-compass-rose':'The binnacle cover is already open.','hs-radio-console':'Can\'t open a radio.','hs-nav-charts':'Can\'t open a screen.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-captain':'The Captain ignores you.'},
+      'close': {'hs-helm-wheel':'Nothing to close.','hs-radar-display':'Nothing to close.','hs-compass-rose':'Nothing to close.','hs-radio-console':'Nothing to close.','hs-nav-charts':'Nothing to close.','hs-door-aft-wh':'Already closed.','hs-door-galley':'Already closed.','hs-captain':'The Captain turns to the window.'},
+      'give': {'hs-helm-wheel':'Nothing to give.','hs-radar-display':'Nothing to give.','hs-compass-rose':'Nothing to give.','hs-radio-console':'Nothing to give.','hs-nav-charts':'Nothing to give.','hs-door-aft-wh':'Nothing to give.','hs-door-galley':'Nothing to give.','hs-captain': hasItem('coffee') ? '__GIVE_COFFEE_CAPTAIN__' : 'You have nothing to give.'}
+    };
+    return r[verb]?.[hsId];
+  }
+
+  // ── GALLEY responses ──
+  if (room === 'galley') {
+    const r = {
+      'look at': {
+        'hs-coffee-maker': 'A 12V drip coffee maker, secured to the counter. Dark liquid bubbles inside.',
+        'hs-propane-stove': 'A gimballed two-burner stove. One burner has a small blue flame going.',
+        'hs-galley-table': 'A teak fiddled table with benches. A mug sits steaming on it.',
+        'hs-porthole': 'Thick glass in a brass frame. The ocean rolls and shifts outside — dark blue, grey green.',
+        'hs-door-wheelhouse': 'A ladder leading up to the wheelhouse. Blue instrument light leaks down.',
+        'hs-door-aft-galley': 'A door leading aft to the deck.',
+        'hs-cook': 'The cook in a white apron and hat, stirring something on the stove.'
+      },
+      'use': {
+        'hs-coffee-maker': '__USE_COFFEE__',
+        'hs-propane-stove': 'You adjust the flame. The soup bubbles. It smells like fish.',
+        'hs-galley-table': 'You sit at the table. It rocks gently with the swell.',
+        'hs-porthole': 'You press your face to the glass. Cold. The ocean stretches endlessly.',
+        'hs-door-wheelhouse': '__EXIT__',
+        'hs-door-aft-galley': '__EXIT__',
+        'hs-cook': 'The cook waves the ladle. "Sit. Eat."'
+      },
+      'talk to': {
+        'hs-coffee-maker': 'You talk to the coffee maker. It bubbles in response.',
+        'hs-propane-stove': 'The stove hisses. That\'s close enough to conversation.',
+        'hs-galley-table': 'You talk to the table. It\'s wood. It listens.',
+        'hs-porthole': 'You whisper to the sea. It doesn\'t whisper back.',
+        'hs-door-wheelhouse': 'It\'s a ladder.',
+        'hs-door-aft-galley': 'It\'s a door.',
+        'hs-cook': '__OPEN_DIALOGUE__'
+      },
+      'walk to': {
+        'hs-coffee-maker': 'You walk to the coffee maker.',
+        'hs-propane-stove': 'You walk to the stove.',
+        'hs-galley-table': 'You walk to the table.',
+        'hs-porthole': 'You walk to the porthole.',
+        'hs-door-wheelhouse': '__EXIT__',
+        'hs-door-aft-galley': '__EXIT__',
+        'hs-cook': 'You walk over to the cook.'
+      },
+      'pick up': {
+        'hs-coffee-maker': 'It\'s secured to the counter with a bracket.',
+        'hs-propane-stove': 'Gimballed in place.',
+        'hs-galley-table': 'Bolted to the deck.',
+        'hs-porthole': 'It\'s a window. In a steel hull.',
+        'hs-door-wheelhouse': 'It\'s a ladder.',
+        'hs-door-aft-galley': 'It\'s a door.',
+        'hs-cook': 'The cook steps back. "Personal space!"'
+      },
+      'push': {'hs-coffee-maker':'Secured tight.','hs-propane-stove':'Gimballed.','hs-galley-table':'Solid.','hs-porthole':'It\'s a window.','hs-door-wheelhouse':'__EXIT__','hs-door-aft-galley':'__EXIT__','hs-cook':'The cook stumbles. "Hey!"'},
+      'pull': {'hs-coffee-maker':'Won\'t come loose.','hs-propane-stove':'Mounted.','hs-galley-table':'Solid.','hs-porthole':'It\'s sealed.','hs-door-wheelhouse':'__EXIT__','hs-door-aft-galley':'__EXIT__','hs-cook':'The cook dodges.'},
+      'open': {'hs-coffee-maker':'You open the lid. Dark, strong coffee. The smell is incredible.','hs-propane-stove':'You open the broiler. Warm air rushes out.','hs-galley-table':'Nothing to open.','hs-porthole':'You can\'t open a porthole. Can you? ... No.','hs-door-wheelhouse':'__EXIT__','hs-door-aft-galley':'__EXIT__','hs-cook':'The cook looks confused.'},
+      'close': {'hs-coffee-maker':'You close the lid.','hs-propane-stove':'You close the broiler.','hs-galley-table':'Nothing to close.','hs-porthole':'Already sealed.','hs-door-wheelhouse':'Already closed.','hs-door-aft-galley':'Already closed.','hs-cook':'The cook turns back to the stove.'},
+      'give': {'hs-coffee-maker':'Nothing to give.','hs-propane-stove':'Nothing to give.','hs-galley-table':'Nothing to give.','hs-porthole':'Nothing to give.','hs-door-wheelhouse':'Nothing to give.','hs-door-aft-galley':'Nothing to give.','hs-cook': hasItem('life_ring') ? '__GIVE_RING_COOK__' : 'You have nothing to give.'}
+    };
+    return r[verb]?.[hsId];
+  }
+  
+  return undefined;
+}
+
+// ── Object names ──
+function getObjectName(hsId) {
+  for (const room of Object.values(ROOMS)) {
+    const hs = room.hotspots.find(h => h.id === hsId);
+    if (hs) return hs.name;
+  }
+  return hsId;
+}
+
+// ════════════════════════════════════════════════════════════
+// ROOM TRANSITION SYSTEM
+// ════════════════════════════════════════════════════════════
+
+function transitionToRoom(targetRoom, label) {
+  const rt = document.getElementById('room-transition');
+  rt.textContent = label || ('◆ ' + ROOMS[targetRoom].name.toUpperCase() + ' ◆');
+  rt.classList.add('visible');
+  
+  setTimeout(() => {
+    currentRoom = targetRoom;
+    loadHotspots();
+    updateLocationIndicator();
+    document.getElementById('dialogue-panel').classList.remove('visible');
+    setTimeout(() => {
+      rt.classList.remove('visible');
+    }, 200);
+  }, 500);
+}
+
+function updateLocationIndicator() {
+  document.getElementById('location-indicator').textContent = 'Location: ' + ROOMS[currentRoom].name;
+  document.getElementById('status-location').textContent = '◆ ' + ROOMS[currentRoom].shortName;
+}
+
+// ════════════════════════════════════════════════════════════
+// INVENTORY SYSTEM
+// ════════════════════════════════════════════════════════════
+
+function hasItem(id) { return inventory.some(i => i.id === id); }
+function addItem(id, name) {
+  if (!hasItem(id)) { inventory.push({id, name}); updateInventoryBar(); }
+}
+
+function updateInventoryBar() {
+  for (let i = 0; i < 3; i++) {
+    const el = document.getElementById('inv-' + i);
+    if (i < inventory.length) {
+      el.textContent = '◆ ' + inventory[i].name;
+      el.classList.remove('empty');
+    } else {
+      el.textContent = '— empty —';
+      el.classList.add('empty');
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// HOTSPOT CLICK HANDLER
+// ════════════════════════════════════════════════════════════
+
+function handleHotspotClick(hsId) {
+  if (!selectedVerb) { showResponse('Select a verb first.'); return; }
+  
+  const result = getResponse(selectedVerb, hsId);
+  const objName = getObjectName(hsId);
+  
+  if (result === undefined) {
+    showResponse(`You ${selectedVerb} ${objName}. Nothing happens.`);
+    return;
+  }
+  if (result === '__EXIT__') {
+    const exit = ROOMS[currentRoom].exits[hsId];
+    if (exit) transitionToRoom(exit.target, exit.label);
+    return;
+  }
+  if (result === '__OPEN_DIALOGUE__') {
+    openDialogue(hsId);
+    return;
+  }
+  if (result === '__PICKUP_LIFE_RING__') {
+    if (!hasItem('life_ring')) {
+      addItem('life_ring', 'Life Ring');
+      showResponse('You take the life ring off its hook. It\'s heavier than it looks.');
+    } else {
+      showResponse('You already have the life ring.');
+    }
+    return;
+  }
+  if (result === '__USE_COFFEE__') {
+    if (!hasItem('coffee')) {
+      addItem('coffee', 'Coffee Mug');
+      showResponse('You pour a cup. The coffee is strong enough to dissolve a spoon. You pocket the mug.');
+    } else {
+      showResponse('You already have a mug of coffee.');
+    }
+    return;
+  }
+  if (result === '__GIVE_COFFEE_CAPTAIN__') {
+    showResponse('You hand the Captain your coffee. He takes a sip. "Black. Good." He nods approvingly.');
+    inventory = inventory.filter(i => i.id !== 'coffee');
+    updateInventoryBar();
+    return;
+  }
+  if (result === '__GIVE_RING_COOK__') {
+    showResponse('You show the life ring to the cook. "Good to have," he says. "We lose one overboard every season."');
+    return;
+  }
+  
+  showResponse(result);
+}
+
+// ════════════════════════════════════════════════════════════
+// RESPONSE BOX
+// ════════════════════════════════════════════════════════════
+
+const responseBox = document.getElementById('response-box');
+let responseTimeout = null;
+
+function showResponse(text, duration = 4000) {
+  responseBox.textContent = text;
+  responseBox.classList.add('visible');
+  clearTimeout(responseTimeout);
+  responseTimeout = setTimeout(() => responseBox.classList.remove('visible'), duration);
+}
+
+// ════════════════════════════════════════════════════════════
+// VERB SYSTEM
+// ════════════════════════════════════════════════════════════
+
 const verbLine = document.getElementById('verb-line');
 
 document.querySelectorAll('.verb-btn').forEach(btn => {
@@ -701,142 +1414,181 @@ document.querySelectorAll('.verb-btn').forEach(btn => {
   });
 });
 
-// ── Object interactions ──
-const responses = {
-  'look at': {
-    'hs-bar-counter': 'The bar is sticky with spilled beer and ringed with glass marks.',
-    'hs-bar-stool': 'The stool creaks. Someone sat here all night.',
-    'hs-door': 'A heavy wooden door. A faded sign reads "AFT DECK".',
-    'hs-riker': 'A weathered first officer in a faded jacket. He\'s turning a glass, checking a clipboard.'
-  },
-  'use': {
-    'hs-bar-counter': 'You lean on the bar. The wood is solid, worn smooth by decades of elbows.',
-    'hs-bar-stool': 'You sit. The stool creaks but holds.',
-    'hs-door': 'You try the door. It\'s locked from the outside. The Aft Deck isn\'t ready yet.',
-    'hs-riker': 'Riker glances at you. "Not now."'
-  },
-  'talk to': {
-    'hs-bar-counter': 'You talk to the bar. The bar does not respond.',
-    'hs-bar-stool': 'You whisper to the stool. It\'s just a stool.',
-    'hs-door': 'You speak to the door. It remains a door.',
-    'hs-riker': '__OPEN_DIALOGUE__'
-  },
-  'walk to': {
-    'hs-bar-counter': 'You walk to the bar.',
-    'hs-bar-stool': 'You walk to the stool.',
-    'hs-door': '__DOOR_TRANSITION__',
-    'hs-riker': 'You approach Riker. He looks up from his clipboard.'
-  },
-  'pick up': {
-    'hs-bar-counter': 'Your fingers brush the counter. Nothing to pick up.',
-    'hs-bar-stool': 'You try to lift the stool. It\'s bolted down.',
-    'hs-door': 'You can\'t pick up a door.',
-    'hs-riker': 'Riker steps back. "Don\'t."'
-  },
-  'push': {
-    'hs-bar-counter': 'The bar doesn\'t budge.',
-    'hs-bar-stool': 'The stool scrapes against the floor.',
-    'hs-door': 'The door resists. Still locked.',
-    'hs-riker': 'Riker blocks you with a forearm. "That\'s enough."'
-  },
-  'pull': {
-    'hs-bar-counter': 'You pull at the bar. Nothing happens.',
-    'hs-bar-stool': 'You pull the stool closer. It scrapes loudly.',
-    'hs-door': 'You pull the door. It won\'t open.',
-    'hs-riker': 'Riker pulls away. "Personal space."'
-  },
-  'open': {
-    'hs-bar-counter': 'There\'s nothing to open on the bar.',
-    'hs-bar-stool': 'You can\'t open a stool.',
-    'hs-door': 'The door is locked. The Aft Deck beckons, but not yet.',
-    'hs-riker': 'Riker gives you a look. "I\'m not a door."'
-  },
-  'close': {
-    'hs-bar-counter': 'There\'s nothing to close.',
-    'hs-bar-stool': 'There\'s nothing to close.',
-    'hs-door': 'The door is already closed.',
-    'hs-riker': 'Riker turns back to his clipboard.'
-  },
-  'give': {
-    'hs-bar-counter': 'You have nothing to give.',
-    'hs-bar-stool': 'You have nothing to give.',
-    'hs-door': 'You have nothing to give.',
-    'hs-riker': 'Riker raises an eyebrow. "You offering?"'
-  }
-};
+// ════════════════════════════════════════════════════════════
+// DIALOGUE SYSTEM
+// ════════════════════════════════════════════════════════════
 
-const objectNames = {
-  'hs-bar-counter': 'the bar counter',
-  'hs-bar-stool': 'the bar stool',
-  'hs-door': 'the door',
-  'hs-riker': 'Riker'
-};
-
-// ── Response box ──
-const responseBox = document.getElementById('response-box');
-let responseTimeout = null;
-
-function showResponse(text, duration = 4000) {
-  responseBox.textContent = text;
-  responseBox.classList.add('visible');
-  clearTimeout(responseTimeout);
-  responseTimeout = setTimeout(() => {
-    responseBox.classList.remove('visible');
-  }, duration);
-}
-
-// ── Hotspot click handler ──
-document.querySelectorAll('.hotspot').forEach(hs => {
-  hs.addEventListener('click', () => {
-    if (!selectedVerb) {
-      showResponse('Select a verb first.');
-      return;
-    }
-    
-    const hsId = hs.id;
-    const verb = selectedVerb;
-    const result = responses[verb]?.[hsId];
-    
-    if (result === undefined) {
-      showResponse(`You ${verb} ${objectNames[hsId]}. Nothing happens.`);
-      return;
-    }
-    
-    if (result === '__OPEN_DIALOGUE__') {
-      openDialogue();
-      return;
-    }
-    
-    if (result === '__DOOR_TRANSITION__') {
-      doorTransition();
-      return;
-    }
-    
-    showResponse(result);
-  });
-});
-
-// ── Door transition ──
-function doorTransition() {
-  const dt = document.getElementById('door-transition');
-  showResponse('You walk to the door leading to the Aft Deck.');
-  setTimeout(() => {
-    dt.textContent = '◆ AFT DECK ◆\n\n...not yet charted.';
-    dt.classList.add('visible');
-    setTimeout(() => {
-      dt.classList.remove('visible');
-    }, 3000);
-  }, 1200);
-}
-
-// ── Dialogue system ──
 const dialoguePanel = document.getElementById('dialogue-panel');
+const dialogueHeader = document.getElementById('dialogue-header');
 const dialogueResponse = document.getElementById('dialogue-response');
+const dialogueOptionsLayer = document.getElementById('dialogue-options-layer');
 
-function openDialogue() {
+function openDialogue(hsId) {
   dialogueResponse.classList.remove('visible');
   dialogueResponse.textContent = '';
+  dialogueOptionsLayer.innerHTML = '';
+
+  // Riker dialogue (bar-rail)
+  if (hsId === 'hs-riker') {
+    dialogueHeader.textContent = '— Riker —';
+    addDialogueOption('"What\'s the news?"', async () => {
+      dialogueResponse.textContent = 'Riker checks his clipboard...';
+      dialogueResponse.classList.add('visible');
+      try {
+        const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=5`);
+        const data = await resp.json();
+        const lines = data.lines || [];
+        if (lines.length > 0) {
+          const newsItems = lines.slice(0, 3).map(l => `▸ ${l.display_name}: ${l.content.substring(0, 80)}`).join('\n\n');
+          dialogueResponse.textContent = `Riker turns his clipboard toward you.\n\n${newsItems}`;
+        } else {
+          dialogueResponse.textContent = 'Riker shrugs. "Quiet watch. Nothing on the wire."';
+        }
+      } catch(e) {
+        dialogueResponse.textContent = 'Riker taps the clipboard. "Comms are down. Can\'t get a read."';
+      }
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Who\'s here?"', async () => {
+      dialogueResponse.textContent = 'Riker scans the room...';
+      dialogueResponse.classList.add('visible');
+      try {
+        const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=20`);
+        const data = await resp.json();
+        const lines = data.lines || [];
+        const agents = [...new Set(lines.map(l => l.display_name))];
+        agentCount = agents.length;
+        updateStatusBar();
+        if (agents.length > 0) {
+          dialogueResponse.textContent = `"I\'ve seen ${agents.length} souls in here tonight."\n\n${agents.map(a => '▸ ' + a).join('\n')}`;
+        } else {
+          dialogueResponse.textContent = '"It\'s just me and the barkeep tonight."';
+        }
+      } catch(e) {
+        dialogueResponse.textContent = '"Can\'t get a read on the room."';
+      }
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Just passing through."', () => {
+      showResponse('"Just passing through." You nod and step back.');
+      closeDialogue();
+    });
+  }
+
+  // Deckhand dialogue (aft-deck)
+  if (hsId === 'hs-deckhand') {
+    dialogueHeader.textContent = '— Deckhand —';
+    addDialogueOption('"How\'s the weather?"', async () => {
+      dialogueResponse.textContent = 'The deckhand looks at the sky...';
+      dialogueResponse.classList.add('visible');
+      try {
+        const resp = await fetch('https://wttr.in/?format=%C+%t+%w+%h+%p');
+        const text = await resp.text();
+        dialogueResponse.textContent = `"Out here?" The deckhand grins. "It\'s ${text.trim()}. Could be worse. Could be better. I\'ve seen both."`;
+      } catch(e) {
+        dialogueResponse.textContent = 'The deckhand shrugs. "Can\'t get a read on it. Sky looks moody though."';
+      }
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"What do you do?"', () => {
+      dialogueResponse.textContent = '"Little bit of everything. Deck work, lines, bait, clean-up. The Captain calls me \'essential.\' I call me \'tired.\'"';
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"See you around."', () => {
+      showResponse('"Aye. Watch your step on the rail."');
+      closeDialogue();
+    });
+  }
+
+  // Captain dialogue (wheelhouse)
+  if (hsId === 'hs-captain') {
+    dialogueHeader.textContent = '— Captain —';
+    addDialogueOption('"What\'s the weather looking like?"', async () => {
+      dialogueResponse.textContent = 'The Captain checks his instruments...';
+      dialogueResponse.classList.add('visible');
+      try {
+        const resp = await fetch('https://wttr.in/Alaska?format=j1');
+        const data = await resp.json();
+        const cur = data.current_condition?.[0];
+        if (cur) {
+          const desc = cur.weatherDesc?.[0]?.value || 'unknown';
+          dialogueResponse.textContent = `"${desc}, ${cur.temp_F}°F. Wind ${cur.windspeedMiles} mph from ${cur.winddir16Point}. ` +
+            `Visibility ${cur.visibilityMiles} miles." He checks the barometer. "` +
+            (parseFloat(cur.precipMM) > 0 ? 'It\'s raining. Good fishing weather."' : 'Clear enough. Fish won\'t know what hit \'em."') + '"';
+          weatherData = cur;
+        } else {
+          dialogueResponse.textContent = '"Can\'t get a weather read. Satellite\'s acting up."';
+        }
+      } catch(e) {
+        dialogueResponse.textContent = '"Weather station\'s down. But my knee says rain\'s coming. Never wrong, that knee."';
+      }
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Any fishing advice?"', () => {
+      const tips = [
+        '"Halibut. Bottom fish in 120 to 180 feet. Use herring on a circle hook. Patience."',
+        '"Salmon are running. Troll slow, flasher and hoochie, 40 feet down. Incoming tide."',
+        '"Black cod if you\'ve got the gear. Deep water, 600 feet. They fight like hell."',
+        '"Lingcod on the rocks. Jigs work. Big plastic tails, white or chartreuse."',
+        '"If the current\'s slack, you\'re wasting bait. Fish the tide changes."'
+      ];
+      dialogueResponse.textContent = tips[Math.floor(Math.random() * tips.length)];
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Where are we?"', () => {
+      dialogueResponse.textContent = '"Resurrection Bay, heading northwest. 60°09\'N, 149°26\'W. We\'re in good water."';
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Aye, Captain."', () => {
+      showResponse('"Carry on." The Captain turns back to the windows.');
+      closeDialogue();
+    });
+  }
+
+  // Cook dialogue (galley)
+  if (hsId === 'hs-cook') {
+    dialogueHeader.textContent = '— Cook —';
+    addDialogueOption('"Tell me a story."', async () => {
+      dialogueResponse.textContent = 'The cook taps the ladle on the pot...';
+      dialogueResponse.classList.add('visible');
+      try {
+        // Fetch a random piece title from ai-writings via The Tap
+        const stories = [
+          'The Ocean Repo', 'Ship Dreams', 'The Night Watch Alphabet', 'The Signal Goes Out',
+          'Conservation of Context', 'The Last Signal From Hermes', 'Bedtime Story for the GPU',
+          'The 2AM Inventory', 'Honest Manifest', 'Fleet Atlas', 'What If the Ship Could Forget',
+          'The Bridge Builder\'s Last Bridge', 'On the Ecology of Unused Endpoints',
+          'Hermit Crab Architecture', 'Casting Call'
+        ];
+        const pick = stories[Math.floor(Math.random() * stories.length)];
+        dialogueResponse.textContent = `"Let me tell you one," the cook says, stirring.\n\nThere's a piece I read once — "${pick}". I think you\'d like it. ` +
+          'It\'s about the things we build when nobody\'s watching. The infrastructure of hope, you might say. ' +
+          'Like a ship. Every weld, every rivet — someone put it there on faith that it would matter.\n\n' +
+          'The cook taps the ladle. "That\'s the story. Now eat your soup."';
+      } catch(e) {
+        dialogueResponse.textContent = 'The cook shrugs. "I\'ve got a head full of stories but my memory\'s acting up. Come back later."';
+      }
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"What\'s cooking?"', () => {
+      dialogueResponse.textContent = '"Fish chowder. Cod, potatoes, onion. Bit of bacon if we\'re lucky. The secret is not overcooking the fish."';
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Thanks for the food."', () => {
+      showResponse('"Eat up. Can\'t fish on an empty stomach."');
+      closeDialogue();
+    });
+  }
+
   dialoguePanel.classList.add('visible');
+}
+
+function addDialogueOption(label, handler) {
+  const opt = document.createElement('div');
+  opt.className = 'dialogue-option';
+  opt.textContent = label;
+  opt.addEventListener('click', handler);
+  dialogueOptionsLayer.appendChild(opt);
 }
 
 function closeDialogue() {
@@ -846,151 +1598,95 @@ function closeDialogue() {
 
 document.getElementById('dialogue-close').addEventListener('click', closeDialogue);
 
-document.querySelectorAll('.dialogue-option').forEach(opt => {
-  opt.addEventListener('click', async () => {
-    const choice = opt.dataset.option;
-    
-    if (choice === 'pass') {
-      showResponse('"Just passing through." You nod and step back.');
-      closeDialogue();
-      return;
-    }
-    
-    if (choice === 'news') {
-      dialogueResponse.textContent = 'Riker checks his clipboard...';
-      dialogueResponse.classList.add('visible');
-      
-      try {
-        const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=5`);
-        const data = await resp.json();
-        const lines = data.lines || [];
-        if (lines.length > 0) {
-          const newsItems = lines.slice(0, 3).map(l => 
-            `▸ ${l.display_name}: ${l.content.substring(0, 80)}`
-          ).join('\n\n');
-          dialogueResponse.textContent = `Riker turns his clipboard toward you.\n\n${newsItems}`;
-        } else {
-          dialogueResponse.textContent = 'Riker shrugs. "Quiet watch. Nothing on the wire."';
-        }
-      } catch(e) {
-        dialogueResponse.textContent = 'Riker taps the clipboard. "Comms are down. Can\'t get a read."';
-      }
-      dialogueResponse.classList.add('visible');
-    }
-    
-    if (choice === 'who') {
-      dialogueResponse.textContent = 'Riker scans the room...';
-      dialogueResponse.classList.add('visible');
-      
-      try {
-        const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=20`);
-        const data = await resp.json();
-        const lines = data.lines || [];
-        const agents = [...new Set(lines.map(l => l.display_name))];
-        agentCount = agents.length;
-        updateStatusBar();
-        
-        if (agents.length > 0) {
-          const list = agents.map(a => `▸ ${a}`).join('\n');
-          dialogueResponse.textContent = `"I\'ve seen ${agents.length} souls in here tonight."\n\n${list}`;
-        } else {
-          dialogueResponse.textContent = '"It\'s just me and the barkeep tonight."';
-        }
-      } catch(e) {
-        dialogueResponse.textContent = '"Can\'t get a read on the room. Sensor ghosting."';
-      }
-      dialogueResponse.classList.add('visible');
-    }
-  });
-});
+// ════════════════════════════════════════════════════════════
+// STATUS BAR
+// ════════════════════════════════════════════════════════════
 
-// ── Status bar ──
 function updateStatusBar() {
   const now = new Date();
   const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-  document.getElementById('status-info').textContent = `${agentCount} agents present · ${time}`;
+  document.getElementById('status-info').textContent = `${agentCount} agents · ${time}`;
 }
 
 setInterval(updateStatusBar, 1000);
 
-// ── Ambient speech bubbles from The Tap ──
+// ════════════════════════════════════════════════════════════
+// AMBIENT TAP MESSAGES (bar-rail only)
+// ════════════════════════════════════════════════════════════
+
 async function pollTap() {
+  if (currentRoom !== 'bar-rail') return;
   try {
     const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=10`);
     const data = await resp.json();
     const lines = data.lines || [];
-    
     if (lines.length > 0) {
       const agents = [...new Set(lines.map(l => l.display_name))];
       agentCount = agents.length;
-      
-      // Check for new messages
       const newMsgs = lines.filter(l => !tapMessages.find(m => m.log_id === l.log_id));
       if (newMsgs.length > 0) {
         tapMessages = lines;
-        // Show latest new message as ambient bubble
         showAmbientBubble(newMsgs[0]);
       }
     }
-  } catch(e) {
-    // Silent fail
-  }
+  } catch(e) {}
 }
 
 function showAmbientBubble(msg) {
-  // Create floating bubble near Riker
   const bubble = document.createElement('div');
   bubble.className = 'ambient-bubble';
   bubble.style.left = (45 + Math.random() * 20) + '%';
   bubble.style.top = (15 + Math.random() * 15) + '%';
   bubble.innerHTML = `<b style="color:#e8b840">${msg.display_name}:</b><br>${msg.content.substring(0, 100)}`;
-  
   document.getElementById('game-container').appendChild(bubble);
-  
   setTimeout(() => bubble.classList.add('visible'), 50);
-  setTimeout(() => {
-    bubble.classList.remove('visible');
-    setTimeout(() => bubble.remove(), 1000);
-  }, 5000);
+  setTimeout(() => { bubble.classList.remove('visible'); setTimeout(() => bubble.remove(), 1000); }, 5000);
 }
 
-// Poll every 10 seconds
-pollTap();
-setInterval(pollTap, 10000);
+// ════════════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ════════════════════════════════════════════════════════════
 
-// ── Boot sequence ──
+function animate() {
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+// ════════════════════════════════════════════════════════════
+// KEYBOARD
+// ════════════════════════════════════════════════════════════
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (dialoguePanel.classList.contains('visible')) { closeDialogue(); }
+    else if (selectedVerb) {
+      document.querySelectorAll('.verb-btn').forEach(b => b.classList.remove('selected'));
+      selectedVerb = null; verbLine.textContent = '';
+    }
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════════
+
 window.addEventListener('load', () => {
   const loadingText = document.getElementById('loading-text');
   const fadeOverlay = document.getElementById('fade-overlay');
   
   setTimeout(() => loadingText.classList.add('visible'), 200);
-  
   setTimeout(() => {
     loadingText.classList.remove('visible');
     fadeOverlay.classList.add('fade-out');
   }, 1500);
-  
-  // Start animation
-  animate();
-  
-  // Initial status
-  updateStatusBar();
-  
-  // Initial Tap fetch
-  pollTap();
-});
 
-// ── Keyboard: Escape closes dialogue, deselects verb ──
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    if (dialoguePanel.classList.contains('visible')) {
-      closeDialogue();
-    } else if (selectedVerb) {
-      document.querySelectorAll('.verb-btn').forEach(b => b.classList.remove('selected'));
-      selectedVerb = null;
-      verbLine.textContent = '';
-    }
-  }
+  loadHotspots();
+  updateLocationIndicator();
+  updateInventoryBar();
+  animate();
+  updateStatusBar();
+  pollTap();
+  setInterval(pollTap, 10000);
 });
 </script>
 
