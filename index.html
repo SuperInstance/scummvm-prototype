@@ -153,6 +153,46 @@
     animation: npcBob 2.5s ease-in-out infinite;
   }
 
+  /* Object sprites — decorative overlays for room objects */
+  .obj-sprite {
+    position: absolute;
+    z-index: 12;
+    pointer-events: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.5));
+    transition: opacity 0.5s ease;
+    display: none;
+  }
+
+  .obj-sprite.visible {
+    display: block;
+  }
+
+  /* Gentle floating animation for certain objects */
+  .obj-sprite.float {
+    animation: objFloat 4s ease-in-out infinite;
+  }
+
+  @keyframes objFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-2px); }
+  }
+
+  /* Fallback CSS rectangle shown when image fails to load */
+  .sprite-fallback {
+    position: absolute;
+    z-index: 11;
+    pointer-events: none;
+    display: none;
+    border: 1px solid rgba(200,160,80,0.4);
+    background: rgba(60,40,15,0.6);
+  }
+
+  .sprite-fallback.visible {
+    display: block;
+  }
+
   @keyframes npcBob {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-4px); }
@@ -531,15 +571,48 @@
   <div id="hotspots-layer"></div>
 
   <!-- NPC sprites layer -->
-  <img id="npc-riker" class="npc-sprite" src="assets/npcs/riker.png" alt="Riker" style="left: 52%; top: 28%; width: 13%;">
-  <img id="npc-captain" class="npc-sprite" src="assets/npcs/captain.png" alt="Captain" style="left: 20%; top: 25%; width: 13%;">
-  <img id="npc-deckhand" class="npc-sprite" src="assets/npcs/deckhand.png" alt="Deckhand" style="left: 42%; top: 30%; width: 13%;">
-  <img id="npc-cook" class="npc-sprite" src="assets/npcs/cook.png" alt="Cook" style="left: 26%; top: 28%; width: 13%;">
-  <img id="npc-wesley" class="npc-sprite" src="assets/npcs/wesley.png" alt="Wesley" style="left: 60%; top: 35%; width: 10%;">
-  <img id="npc-hermes" class="npc-sprite" src="assets/npcs/hermes.png" alt="Hermes" style="left: 70%; top: 30%; width: 11%;">
-  <img id="npc-coffee" class="npc-sprite" src="assets/npcs/coffee.png" alt="Coffee" style="left: 15%; top: 40%; width: 8%;">
-  <img id="npc-life-ring" class="npc-sprite" src="assets/npcs/life_ring.png" alt="Life Ring" style="left: 72%; top: 30%; width: 9%;">
-  <img id="npc-compass" class="npc-sprite" src="assets/npcs/compass.png" alt="Compass" style="left: 67%; top: 30%; width: 9%;">
+  <img id="npc-riker" class="npc-sprite" src="assets/npcs/riker.png" alt="Riker" style="left: 52%; top: 28%; width: 13%;" onerror="this.style.display='none';document.getElementById('fb-npc-riker').classList.add('visible');">
+  <img id="npc-captain" class="npc-sprite" src="assets/npcs/captain.png" alt="Captain" style="left: 20%; top: 25%; width: 13%;" onerror="this.style.display='none';document.getElementById('fb-npc-captain').classList.add('visible');">
+  <img id="npc-deckhand" class="npc-sprite" src="assets/npcs/deckhand.png" alt="Deckhand" style="left: 42%; top: 30%; width: 13%;" onerror="this.style.display='none';document.getElementById('fb-npc-deckhand').classList.add('visible');">
+  <img id="npc-cook" class="npc-sprite" src="assets/npcs/cook.png" alt="Cook" style="left: 26%; top: 28%; width: 13%;" onerror="this.style.display='none';document.getElementById('fb-npc-cook').classList.add('visible');">
+  <img id="npc-wesley" class="npc-sprite" src="assets/npcs/wesley.png" alt="Wesley" style="left: 48%; top: 38%; width: 11%;" onerror="this.style.display='none';document.getElementById('fb-npc-wesley').classList.add('visible');">
+  <img id="npc-hermes" class="npc-sprite" src="assets/npcs/hermes.png" alt="Hermes" style="left: 65%; top: 30%; width: 11%;" onerror="this.style.display='none';document.getElementById('fb-npc-hermes').classList.add('visible');">
+  <img id="npc-coffee" class="npc-sprite" src="assets/npcs/coffee.png" alt="Coffee" style="left: 15%; top: 40%; width: 8%;" onerror="this.style.display='none';">
+  <img id="npc-life-ring" class="npc-sprite" src="assets/npcs/life_ring.png" alt="Life Ring" style="left: 72%; top: 30%; width: 9%;" onerror="this.style.display='none';">
+  <img id="npc-compass" class="npc-sprite" src="assets/npcs/compass.png" alt="Compass" style="left: 67%; top: 30%; width: 9%;" onerror="this.style.display='none';">
+
+  <!-- NPC fallback rectangles (shown if sprite fails) -->
+  <div id="fb-npc-riker" class="sprite-fallback" style="left: 52%; top: 28%; width: 13%; height: 35%;"></div>
+  <div id="fb-npc-captain" class="sprite-fallback" style="left: 20%; top: 25%; width: 13%; height: 35%;"></div>
+  <div id="fb-npc-deckhand" class="sprite-fallback" style="left: 42%; top: 30%; width: 13%; height: 35%;"></div>
+  <div id="fb-npc-cook" class="sprite-fallback" style="left: 26%; top: 28%; width: 13%; height: 33%;"></div>
+  <div id="fb-npc-wesley" class="sprite-fallback" style="left: 48%; top: 38%; width: 11%; height: 30%;"></div>
+  <div id="fb-npc-hermes" class="sprite-fallback" style="left: 65%; top: 30%; width: 11%; height: 30%;"></div>
+
+  <!-- ═══ OBJECT SPRITES ═══ -->
+  <!-- Bar Rail objects -->
+  <img id="obj-bar-counter" class="obj-sprite" src="assets/objects/bar_counter_obj.png" alt="" style="left: 12%; top: 47%; width: 40%;" onerror="this.style.display='none'">
+  <img id="obj-bar-stool" class="obj-sprite" src="assets/objects/bar_stool_obj.png" alt="" style="left: 18%; top: 68%; width: 10%;" onerror="this.style.display='none'">
+
+  <!-- Wheelhouse objects -->
+  <img id="obj-helm-wheel" class="obj-sprite" src="assets/objects/helm_wheel.png" alt="" style="left: 16%; top: 25%; width: 16%;" onerror="this.style.display='none'">
+  <img id="obj-radar-display" class="obj-sprite float" src="assets/objects/radar_display.png" alt="" style="left: 40%; top: 18%; width: 16%;" onerror="this.style.display='none'">
+  <img id="obj-compass" class="obj-sprite" src="assets/objects/compass_obj.png" alt="" style="left: 60%; top: 20%; width: 14%;" onerror="this.style.display='none'">
+  <img id="obj-radio-console" class="obj-sprite" src="assets/objects/radio_console.png" alt="" style="left: 74%; top: 22%; width: 16%;" onerror="this.style.display='none'">
+  <img id="obj-nav-charts" class="obj-sprite" src="assets/objects/nav_charts.png" alt="" style="left: 36%; top: 45%; width: 22%;" onerror="this.style.display='none'">
+
+  <!-- Aft Deck objects -->
+  <img id="obj-life-ring" class="obj-sprite float" src="assets/objects/life_ring_obj.png" alt="" style="left: 68%; top: 20%; width: 12%;" onerror="this.style.display='none'">
+  <img id="obj-weather-station" class="obj-sprite" src="assets/objects/weather_station.png" alt="" style="left: 8%; top: 14%; width: 12%;" onerror="this.style.display='none'">
+
+  <!-- Galley objects -->
+  <img id="obj-propane-stove" class="obj-sprite" src="assets/objects/propane_stove.png" alt="" style="left: 24%; top: 18%; width: 16%;" onerror="this.style.display='none'">
+  <img id="obj-galley-table" class="obj-sprite" src="assets/objects/galley_table.png" alt="" style="left: 42%; top: 42%; width: 28%;" onerror="this.style.display='none'">
+  <img id="obj-porthole" class="obj-sprite float" src="assets/objects/porthole.png" alt="" style="left: 78%; top: 15%; width: 16%;" onerror="this.style.display='none'">
+
+  <!-- Engine Room objects -->
+  <img id="obj-port-engine" class="obj-sprite" src="assets/objects/port_engine.png" alt="" style="left: 5%; top: 25%; width: 22%;" onerror="this.style.display='none'">
+  <img id="obj-tool-rack" class="obj-sprite" src="assets/objects/tool_rack.png" alt="" style="left: 58%; top: 62%; width: 22%;" onerror="this.style.display='none'">
 
   <!-- Response box -->
   <div id="response-box"></div>
@@ -759,6 +832,10 @@ const ROOMS = {
     }
   }
 };
+
+// Expose to window for split-view sync
+window.ROOMS = ROOMS;
+window.currentRoom = currentRoom;
 
 // ── Color Palettes ──
 const PALETTES = {
@@ -2489,8 +2566,31 @@ const ROOM_NPCS = {
   'wheelhouse': ['npc-captain', 'npc-compass'],
   'aft-deck':   ['npc-deckhand', 'npc-life-ring'],
   'galley':     ['npc-cook', 'npc-coffee'],
-  'engine-room': []
+  'engine-room': ['npc-wesley'],
+  'the-radio':   ['npc-hermes']
 };
+
+// Map rooms to which object sprites should be visible
+const ROOM_OBJECTS = {
+  'bar-rail':   ['obj-bar-counter', 'obj-bar-stool'],
+  'wheelhouse': ['obj-helm-wheel', 'obj-radar-display', 'obj-compass', 'obj-radio-console', 'obj-nav-charts'],
+  'aft-deck':   ['obj-life-ring', 'obj-weather-station'],
+  'galley':     ['obj-propane-stove', 'obj-galley-table', 'obj-porthole'],
+  'engine-room': ['obj-port-engine', 'obj-tool-rack'],
+  'the-radio':   [],
+  'aft-cockpit': []
+};
+
+function showObjSprites(roomId) {
+  const visible = ROOM_OBJECTS[roomId] || [];
+  document.querySelectorAll('.obj-sprite').forEach(el => {
+    if (visible.includes(el.id)) {
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
+  });
+}
 
 function showNpcSprites(roomId) {
   const visible = ROOM_NPCS[roomId] || [];
@@ -2499,6 +2599,9 @@ function showNpcSprites(roomId) {
       el.classList.add('visible');
     } else {
       el.classList.remove('visible');
+      // Also hide corresponding fallback
+      const fb = document.getElementById('fb-' + el.id);
+      if (fb) fb.classList.remove('visible');
     }
   });
 }
@@ -2517,10 +2620,12 @@ function transitionToRoom(targetRoom, label) {
   
   setTimeout(() => {
     currentRoom = targetRoom;
+    window.currentRoom = currentRoom;
     loadHotspots();
     loadRoomBackground(currentRoom);
     updateLocationIndicator();
     showNpcSprites(currentRoom);
+    showObjSprites(currentRoom);
 
     // ── Sync: notify parent split-view of room change ──
     const WORLD_KEY = 'platos-shell-world';
@@ -3051,6 +3156,7 @@ window.addEventListener('load', () => {
   loadRoomBackground(currentRoom);
   updateLocationIndicator();
   showNpcSprites(currentRoom);
+  showObjSprites(currentRoom);
   updateInventoryBar();
   animate();
   updateStatusBar();
