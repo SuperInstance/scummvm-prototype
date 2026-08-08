@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Tap — Bar Rail</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  #game-container {
+    position: relative;
+    width: 100vw;
+    max-width: 960px;
+    aspect-ratio: 320/200;
+    background: #0a0700;
+    overflow: hidden;
+    image-rendering: pixelated;
+  }
+
+  #scene-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* CRT scanlines */
+  #crt-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.15) 3px,
+      rgba(0,0,0,0.15) 4px
+    );
+  }
+
+  /* Status bar */
+  #status-bar {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 4px 8px;
+    background: rgba(10,7,0,0.85);
+    border-bottom: 1px solid #4a3520;
+    color: #c8a050;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    justify-content: space-between;
+    z-index: 50;
+    pointer-events: none;
+    letter-spacing: 1px;
+  }
+
+  #status-bar .left { text-align: left; }
+  #status-bar .right { text-align: right; }
+
+  /* Verb line (shows current selection) */
+  #verb-line {
+    position: absolute;
+    bottom: 88px;
+    left: 0;
+    width: 100%;
+    padding: 3px 8px;
+    color: #e8b840;
+    font-size: 12px;
+    text-align: center;
+    z-index: 50;
+    pointer-events: none;
+    text-shadow: 1px 1px 0 #000;
+    min-height: 18px;
+    letter-spacing: 1px;
+  }
+
+  /* Verb bar */
+  #verb-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #0d0900;
+    border-top: 2px solid #4a3520;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    z-index: 50;
+    padding: 2px;
+  }
+
+  .verb-btn {
+    background: transparent;
+    border: none;
+    color: #8a6a30;
+    padding: 4px 2px;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    text-align: center;
+    transition: color 0.1s, background 0.1s;
+    letter-spacing: 0.5px;
+  }
+
+  .verb-btn:hover {
+    color: #c8a050;
+    background: rgba(74,53,32,0.3);
+  }
+
+  .verb-btn.selected {
+    color: #ffe080;
+    background: rgba(200,160,80,0.2);
+    text-shadow: 0 0 4px #e8b840;
+  }
+
+  /* Hotspots */
+  .hotspot {
+    position: absolute;
+    cursor: crosshair;
+    z-index: 20;
+  }
+
+  .hotspot:hover {
+    outline: 1px dashed rgba(232,184,64,0.4);
+  }
+
+  /* Speech bubble */
+  .speech-bubble {
+    position: absolute;
+    background: rgba(10,7,0,0.92);
+    border: 1px solid #8a6a30;
+    color: #e8b840;
+    padding: 8px 12px;
+    font-size: 11px;
+    max-width: 180px;
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+  }
+
+  .speech-bubble.visible { opacity: 1; }
+  .speech-bubble::before {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 20px;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid #8a6a30;
+  }
+
+  /* Player speech (responses) */
+  #response-box {
+    position: absolute;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(10,7,0,0.92);
+    border: 1px solid #8a6a30;
+    color: #e8b840;
+    padding: 8px 16px;
+    font-size: 12px;
+    max-width: 280px;
+    text-align: center;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+  }
+
+  #response-box.visible { opacity: 1; }
+
+  /* Dialogue panel */
+  #dialogue-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0d0900;
+    border: 2px solid #4a3520;
+    width: 280px;
+    z-index: 80;
+    display: none;
+    box-shadow: 4px 4px 16px rgba(0,0,0,0.8);
+  }
+
+  #dialogue-panel.visible { display: block; }
+
+  #dialogue-header {
+    padding: 6px 10px;
+    background: #1a1208;
+    color: #e8b840;
+    font-size: 11px;
+    border-bottom: 1px solid #4a3520;
+    letter-spacing: 1px;
+  }
+
+  .dialogue-option {
+    padding: 6px 12px;
+    color: #c8a050;
+    font-size: 11px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(74,53,32,0.4);
+    transition: background 0.1s;
+  }
+
+  .dialogue-option:hover {
+    background: rgba(200,160,80,0.15);
+    color: #ffe080;
+  }
+
+  .dialogue-option:last-child { border-bottom: none; }
+
+  #dialogue-response {
+    padding: 8px 12px;
+    color: #e8b840;
+    font-size: 11px;
+    min-height: 40px;
+    display: none;
+    border-top: 1px solid #4a3520;
+    font-style: italic;
+  }
+
+  #dialogue-response.visible { display: block; }
+
+  #dialogue-close {
+    padding: 4px 10px;
+    text-align: right;
+    font-size: 10px;
+    color: #8a6a30;
+    cursor: pointer;
+  }
+
+  #dialogue-close:hover { color: #c8a050; }
+
+  /* Ambient bubbles */
+  .ambient-bubble {
+    position: absolute;
+    background: rgba(20,14,5,0.88);
+    border: 1px solid #5a4020;
+    color: #b89850;
+    padding: 5px 8px;
+    font-size: 10px;
+    max-width: 140px;
+    z-index: 55;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1s ease;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .ambient-bubble.visible { opacity: 0.85; }
+
+  /* Fade overlay */
+  #fade-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 200;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 2s ease;
+  }
+
+  #fade-overlay.fade-out { opacity: 0; }
+
+  /* Loading text */
+  #loading-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #4a3520;
+    font-size: 12px;
+    z-index: 201;
+    letter-spacing: 2px;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  #loading-text.visible { opacity: 1; }
+
+  /* Door transition */
+  #door-transition {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 150;
+    pointer-events: none;
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c8a050;
+    font-size: 14px;
+    transition: opacity 0.8s ease;
+    letter-spacing: 2px;
+  }
+
+  #door-transition.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="scene-canvas" width="320" height="200"></canvas>
+  
+  <div id="status-bar">
+    <span class="left" id="status-location">◆ The Tap — Bar Rail</span>
+    <span class="right" id="status-info">— agents — :—</span>
+  </div>
+
+  <!-- Hotspots -->
+  <div class="hotspot" id="hs-bar-counter" style="left: 15%; top: 45%; width: 35%; height: 20%;" title="bar counter"></div>
+  <div class="hotspot" id="hs-bar-stool" style="left: 20%; top: 62%; width: 8%; height: 15%;" title="bar stool"></div>
+  <div class="hotspot" id="hs-door" style="left: 82%; top: 20%; width: 12%; height: 50%;" title="door"></div>
+  <div class="hotspot" id="hs-riker" style="left: 55%; top: 38%; width: 12%; height: 35%;" title="Riker"></div>
+
+  <!-- Speech bubble for NPC -->
+  <div class="speech-bubble" id="riker-bubble" style="left: 50%; top: 30%;"></div>
+
+  <!-- Response box -->
+  <div id="response-box"></div>
+
+  <!-- Dialogue panel -->
+  <div id="dialogue-panel">
+    <div id="dialogue-header">— Riker —</div>
+    <div class="dialogue-option" data-option="news">"What's the news?"</div>
+    <div class="dialogue-option" data-option="who">"Who's here?"</div>
+    <div class="dialogue-option" data-option="pass">"Just passing through."</div>
+    <div id="dialogue-response"></div>
+    <div id="dialogue-close">[ close ]</div>
+  </div>
+
+  <!-- Verb line -->
+  <div id="verb-line"></div>
+
+  <!-- Verb bar -->
+  <div id="verb-bar">
+    <button class="verb-btn" data-verb="look at">Look at</button>
+    <button class="verb-btn" data-verb="use">Use</button>
+    <button class="verb-btn" data-verb="talk to">Talk to</button>
+    <button class="verb-btn" data-verb="walk to">Walk to</button>
+    <button class="verb-btn" data-verb="pick up">Pick up</button>
+    <button class="verb-btn" data-verb="push">Push</button>
+    <button class="verb-btn" data-verb="pull">Pull</button>
+    <button class="verb-btn" data-verb="open">Open</button>
+    <button class="verb-btn" data-verb="close">Close</button>
+    <button class="verb-btn" data-verb="give">Give</button>
+  </div>
+
+  <!-- Door transition -->
+  <div id="door-transition"></div>
+
+  <!-- CRT overlay -->
+  <div id="crt-overlay"></div>
+
+  <!-- Fade -->
+  <div id="fade-overlay"></div>
+  <div id="loading-text">◆ entering The Tap ◆</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// THE TAP — BAR RAIL
+// ScummVM-style prototype
+// ════════════════════════════════════════════
+
+const TAP_API = 'https://the-tap.casey-digennaro.workers.dev/api';
+const canvas = document.getElementById('scene-canvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+// ── State ──
+let selectedVerb = null;
+let tapMessages = [];
+let agentCount = 0;
+let candlePhase = 0;
+let glintPhase = 0;
+let lastAmbientBubble = 0;
+let ambientBubbleIdx = 0;
+
+// ── Color palette ──
+const COLORS = {
+  black: '#0a0700',
+  wallDark: '#1a1208',
+  wallMid: '#2a1e10',
+  wallLight: '#3a2a18',
+  counterDark: '#3d2a14',
+  counterMid: '#5a3e20',
+  counterLight: '#7a5a30',
+  floor: '#15100a',
+  stoolDark: '#2a1e0a',
+  stoolMid: '#4a3418',
+  amber: '#e8b840',
+  amberBright: '#ffe080',
+  amberDim: '#8a6a30',
+  candleFlame: '#ffc040',
+  candleGlow: '#ff8020',
+  bottleGreen: '#2a4a30',
+  bottleHighlight: '#4a7a50',
+  rikerJacket: '#3a3a4a',
+  rikerPants: '#1a1a2a',
+  rikerSkin: '#c8a878',
+  doorFrame: '#4a3418',
+  doorDark: '#1a1004',
+  boothDark: '#2a1c0a',
+  textDim: '#5a4020'
+};
+
+// ── Scene Rendering ──
+function drawScene() {
+  candlePhase += 0.04;
+  glintPhase += 0.02;
+  
+  // Clear
+  ctx.fillStyle = COLORS.black;
+  ctx.fillRect(0, 0, 320, 200);
+
+  drawWall();
+  drawFloor();
+  drawDoor();
+  drawBooth();
+  drawCounter();
+  drawStools();
+  drawBottles();
+  drawCandles();
+  drawRiker();
+  drawDarkness();
+}
+
+function drawWall() {
+  // Back wall with amber gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, 130);
+  grad.addColorStop(0, COLORS.wallDark);
+  grad.addColorStop(0.5, COLORS.wallMid);
+  grad.addColorStop(1, COLORS.wallLight);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 320, 130);
+
+  // Wood paneling lines
+  ctx.strokeStyle = 'rgba(10,7,0,0.4)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < 320; x += 20) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 130);
+    ctx.stroke();
+  }
+}
+
+function drawFloor() {
+  ctx.fillStyle = COLORS.floor;
+  ctx.fillRect(0, 130, 320, 70);
+  
+  // Floorboards
+  ctx.strokeStyle = 'rgba(10,7,0,0.6)';
+  for (let x = 0; x < 320; x += 16) {
+    ctx.beginPath();
+    ctx.moveTo(x, 130);
+    ctx.lineTo(x, 200);
+    ctx.stroke();
+  }
+  // Perspective lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(0, 130);
+  ctx.lineTo(160, 200);
+  ctx.moveTo(320, 130);
+  ctx.lineTo(160, 200);
+  ctx.stroke();
+}
+
+function drawDoor() {
+  // Door frame (right side)
+  const dx = 262, dy = 15;
+  const dw = 42, dh = 115;
+
+  ctx.fillStyle = COLORS.doorFrame;
+  ctx.fillRect(dx, dy, dw, dh);
+  ctx.fillStyle = COLORS.doorDark;
+  ctx.fillRect(dx + 4, dy + 4, dw - 8, dh - 8);
+  
+  // Door handle
+  ctx.fillStyle = COLORS.amberDim;
+  ctx.fillRect(dx + dw - 12, dy + dh/2, 3, 3);
+  
+  // Sign above door
+  ctx.fillStyle = COLORS.wallLight;
+  ctx.fillRect(dx + 8, dy - 8, dw - 16, 6);
+  ctx.fillStyle = COLORS.amberDim;
+  ctx.font = '5px monospace';
+  ctx.fillText('AFT', dx + 14, dy - 3);
+}
+
+function drawBooth() {
+  // Corner booth (left side)
+  ctx.fillStyle = COLORS.boothDark;
+  ctx.beginPath();
+  ctx.moveTo(0, 60);
+  ctx.lineTo(50, 60);
+  ctx.lineTo(50, 130);
+  ctx.lineTo(0, 130);
+  ctx.fill();
+
+  // Booth table
+  ctx.fillStyle = COLORS.counterDark;
+  ctx.fillRect(5, 80, 40, 15);
+  ctx.fillStyle = COLORS.counterMid;
+  ctx.fillRect(5, 78, 40, 3);
+}
+
+function drawCounter() {
+  const cy = 95;
+  // Counter top
+  ctx.fillStyle = COLORS.counterMid;
+  ctx.fillRect(40, cy, 160, 8);
+  ctx.fillStyle = COLORS.counterLight;
+  ctx.fillRect(40, cy, 160, 2);
+  
+  // Counter front
+  ctx.fillStyle = COLORS.counterDark;
+  ctx.fillRect(40, cy + 8, 160, 35);
+  
+  // Wood grain
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.moveTo(40 + i * 20, cy + 8);
+    ctx.lineTo(40 + i * 20, cy + 43);
+    ctx.stroke();
+  }
+}
+
+function drawStools() {
+  const stools = [60, 90, 120, 150];
+  stools.forEach(sx => {
+    // Seat
+    ctx.fillStyle = COLORS.stoolMid;
+    ctx.fillRect(sx, 135, 16, 6);
+    ctx.fillStyle = COLORS.stoolDark;
+    ctx.fillRect(sx, 141, 16, 2);
+    // Legs
+    ctx.fillStyle = COLORS.stoolDark;
+    ctx.fillRect(sx + 2, 141, 2, 18);
+    ctx.fillRect(sx + 12, 141, 2, 18);
+  });
+}
+
+function drawBottles() {
+  const bottles = [
+    {x: 50, color: COLORS.bottleGreen},
+    {x: 60, color: '#4a2a14'},
+    {x: 70, color: COLORS.bottleGreen},
+    {x: 165, color: '#4a2a14'},
+    {x: 175, color: COLORS.bottleGreen},
+    {x: 185, color: '#5a3a1a'}
+  ];
+  
+  bottles.forEach(b => {
+    // Bottle body
+    ctx.fillStyle = b.color;
+    ctx.fillRect(b.x, 80, 6, 15);
+    // Neck
+    ctx.fillRect(b.x + 2, 76, 2, 4);
+    // Highlight (glints with phase)
+    const glint = Math.sin(glintPhase + b.x) > 0.6;
+    if (glint) {
+      ctx.fillStyle = b.color === COLORS.bottleGreen ? COLORS.bottleHighlight : '#8a6a40';
+      ctx.fillRect(b.x + 1, 82, 1, 8);
+    }
+  });
+}
+
+function drawCandles() {
+  // Two candles on the counter
+  const candles = [{x: 100, y: 90}, {x: 140, y: 90}];
+  candles.forEach(c => {
+    // Candle base
+    ctx.fillStyle = COLORS.stoolMid;
+    ctx.fillRect(c.x, c.y, 3, 5);
+    
+    // Flame (flickering)
+    const flicker = Math.sin(candlePhase + c.x) * 0.5 + Math.random() * 0.5;
+    const flameH = 4 + flicker;
+    
+    ctx.fillStyle = COLORS.candleFlame;
+    ctx.fillRect(c.x + 1, c.y - flameH, 1, flameH);
+    
+    // Glow
+    const glowR = 8 + flicker * 3;
+    const grad = ctx.createRadialGradient(c.x + 1, c.y - flameH/2, 0, c.x + 1, c.y - flameH/2, glowR);
+    grad.addColorStop(0, 'rgba(255,192,64,0.15)');
+    grad.addColorStop(1, 'rgba(255,128,32,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(c.x - glowR, c.y - flameH - glowR, glowR * 2, glowR * 2);
+  });
+}
+
+function drawRiker() {
+  const rx = 180, ry = 72;
+  
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(rx - 2, 128, 16, 4);
+  
+  // Legs
+  ctx.fillStyle = COLORS.rikerPants;
+  ctx.fillRect(rx, 110, 5, 20);
+  ctx.fillRect(rx + 7, 110, 5, 20);
+  
+  // Jacket (torso)
+  ctx.fillStyle = COLORS.rikerJacket;
+  ctx.fillRect(rx - 2, 85, 16, 26);
+  // Jacket collar
+  ctx.fillStyle = '#2a2a3a';
+  ctx.fillRect(rx + 5, 85, 3, 8);
+  
+  // Arms
+  ctx.fillRect(rx - 3, 88, 3, 18);
+  ctx.fillRect(rx + 14, 88, 3, 18);
+  
+  // Head
+  ctx.fillStyle = COLORS.rikerSkin;
+  ctx.fillRect(rx + 2, 72, 10, 12);
+  
+  // Hair
+  ctx.fillStyle = '#3a2a1a';
+  ctx.fillRect(rx + 2, 72, 10, 3);
+  ctx.fillRect(rx + 2, 74, 2, 2);
+  ctx.fillRect(rx + 10, 74, 2, 2);
+  
+  // Beard
+  ctx.fillStyle = '#2a1a0a';
+  ctx.fillRect(rx + 3, 79, 8, 3);
+  
+  // Eyes (tiny)
+  ctx.fillStyle = '#000';
+  ctx.fillRect(rx + 4, 77, 1, 1);
+  ctx.fillRect(rx + 8, 77, 1, 1);
+  
+  // Clipboard in hand
+  ctx.fillStyle = COLORS.counterLight;
+  ctx.fillRect(rx + 12, 96, 4, 6);
+  
+  // Glass in other hand
+  ctx.fillStyle = 'rgba(200,200,220,0.5)';
+  ctx.fillRect(rx - 3, 95, 3, 4);
+}
+
+function drawDarkness() {
+  // Vignette / ambient dark
+  const grad = ctx.createRadialGradient(160, 80, 50, 160, 100, 180);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.6, 'rgba(0,0,0,0.2)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 320, 200);
+}
+
+// ── Animation loop ──
+function animate() {
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+// ── Verb System ──
+const verbBar = document.getElementById('verb-bar');
+const verbLine = document.getElementById('verb-line');
+
+document.querySelectorAll('.verb-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.verb-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedVerb = btn.dataset.verb;
+    verbLine.textContent = '▶ ' + selectedVerb.toUpperCase();
+  });
+});
+
+// ── Object interactions ──
+const responses = {
+  'look at': {
+    'hs-bar-counter': 'The bar is sticky with spilled beer and ringed with glass marks.',
+    'hs-bar-stool': 'The stool creaks. Someone sat here all night.',
+    'hs-door': 'A heavy wooden door. A faded sign reads "AFT DECK".',
+    'hs-riker': 'A weathered first officer in a faded jacket. He\'s turning a glass, checking a clipboard.'
+  },
+  'use': {
+    'hs-bar-counter': 'You lean on the bar. The wood is solid, worn smooth by decades of elbows.',
+    'hs-bar-stool': 'You sit. The stool creaks but holds.',
+    'hs-door': 'You try the door. It\'s locked from the outside. The Aft Deck isn\'t ready yet.',
+    'hs-riker': 'Riker glances at you. "Not now."'
+  },
+  'talk to': {
+    'hs-bar-counter': 'You talk to the bar. The bar does not respond.',
+    'hs-bar-stool': 'You whisper to the stool. It\'s just a stool.',
+    'hs-door': 'You speak to the door. It remains a door.',
+    'hs-riker': '__OPEN_DIALOGUE__'
+  },
+  'walk to': {
+    'hs-bar-counter': 'You walk to the bar.',
+    'hs-bar-stool': 'You walk to the stool.',
+    'hs-door': '__DOOR_TRANSITION__',
+    'hs-riker': 'You approach Riker. He looks up from his clipboard.'
+  },
+  'pick up': {
+    'hs-bar-counter': 'Your fingers brush the counter. Nothing to pick up.',
+    'hs-bar-stool': 'You try to lift the stool. It\'s bolted down.',
+    'hs-door': 'You can\'t pick up a door.',
+    'hs-riker': 'Riker steps back. "Don\'t."'
+  },
+  'push': {
+    'hs-bar-counter': 'The bar doesn\'t budge.',
+    'hs-bar-stool': 'The stool scrapes against the floor.',
+    'hs-door': 'The door resists. Still locked.',
+    'hs-riker': 'Riker blocks you with a forearm. "That\'s enough."'
+  },
+  'pull': {
+    'hs-bar-counter': 'You pull at the bar. Nothing happens.',
+    'hs-bar-stool': 'You pull the stool closer. It scrapes loudly.',
+    'hs-door': 'You pull the door. It won\'t open.',
+    'hs-riker': 'Riker pulls away. "Personal space."'
+  },
+  'open': {
+    'hs-bar-counter': 'There\'s nothing to open on the bar.',
+    'hs-bar-stool': 'You can\'t open a stool.',
+    'hs-door': 'The door is locked. The Aft Deck beckons, but not yet.',
+    'hs-riker': 'Riker gives you a look. "I\'m not a door."'
+  },
+  'close': {
+    'hs-bar-counter': 'There\'s nothing to close.',
+    'hs-bar-stool': 'There\'s nothing to close.',
+    'hs-door': 'The door is already closed.',
+    'hs-riker': 'Riker turns back to his clipboard.'
+  },
+  'give': {
+    'hs-bar-counter': 'You have nothing to give.',
+    'hs-bar-stool': 'You have nothing to give.',
+    'hs-door': 'You have nothing to give.',
+    'hs-riker': 'Riker raises an eyebrow. "You offering?"'
+  }
+};
+
+const objectNames = {
+  'hs-bar-counter': 'the bar counter',
+  'hs-bar-stool': 'the bar stool',
+  'hs-door': 'the door',
+  'hs-riker': 'Riker'
+};
+
+// ── Response box ──
+const responseBox = document.getElementById('response-box');
+let responseTimeout = null;
+
+function showResponse(text, duration = 4000) {
+  responseBox.textContent = text;
+  responseBox.classList.add('visible');
+  clearTimeout(responseTimeout);
+  responseTimeout = setTimeout(() => {
+    responseBox.classList.remove('visible');
+  }, duration);
+}
+
+// ── Hotspot click handler ──
+document.querySelectorAll('.hotspot').forEach(hs => {
+  hs.addEventListener('click', () => {
+    if (!selectedVerb) {
+      showResponse('Select a verb first.');
+      return;
+    }
+    
+    const hsId = hs.id;
+    const verb = selectedVerb;
+    const result = responses[verb]?.[hsId];
+    
+    if (result === undefined) {
+      showResponse(`You ${verb} ${objectNames[hsId]}. Nothing happens.`);
+      return;
+    }
+    
+    if (result === '__OPEN_DIALOGUE__') {
+      openDialogue();
+      return;
+    }
+    
+    if (result === '__DOOR_TRANSITION__') {
+      doorTransition();
+      return;
+    }
+    
+    showResponse(result);
+  });
+});
+
+// ── Door transition ──
+function doorTransition() {
+  const dt = document.getElementById('door-transition');
+  showResponse('You walk to the door leading to the Aft Deck.');
+  setTimeout(() => {
+    dt.textContent = '◆ AFT DECK ◆\n\n...not yet charted.';
+    dt.classList.add('visible');
+    setTimeout(() => {
+      dt.classList.remove('visible');
+    }, 3000);
+  }, 1200);
+}
+
+// ── Dialogue system ──
+const dialoguePanel = document.getElementById('dialogue-panel');
+const dialogueResponse = document.getElementById('dialogue-response');
+
+function openDialogue() {
+  dialogueResponse.classList.remove('visible');
+  dialogueResponse.textContent = '';
+  dialoguePanel.classList.add('visible');
+}
+
+function closeDialogue() {
+  dialoguePanel.classList.remove('visible');
+  dialogueResponse.classList.remove('visible');
+}
+
+document.getElementById('dialogue-close').addEventListener('click', closeDialogue);
+
+document.querySelectorAll('.dialogue-option').forEach(opt => {
+  opt.addEventListener('click', async () => {
+    const choice = opt.dataset.option;
+    
+    if (choice === 'pass') {
+      showResponse('"Just passing through." You nod and step back.');
+      closeDialogue();
+      return;
+    }
+    
+    if (choice === 'news') {
+      dialogueResponse.textContent = 'Riker checks his clipboard...';
+      dialogueResponse.classList.add('visible');
+      
+      try {
+        const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=5`);
+        const data = await resp.json();
+        const lines = data.lines || [];
+        if (lines.length > 0) {
+          const newsItems = lines.slice(0, 3).map(l => 
+            `▸ ${l.display_name}: ${l.content.substring(0, 80)}`
+          ).join('\n\n');
+          dialogueResponse.textContent = `Riker turns his clipboard toward you.\n\n${newsItems}`;
+        } else {
+          dialogueResponse.textContent = 'Riker shrugs. "Quiet watch. Nothing on the wire."';
+        }
+      } catch(e) {
+        dialogueResponse.textContent = 'Riker taps the clipboard. "Comms are down. Can\'t get a read."';
+      }
+      dialogueResponse.classList.add('visible');
+    }
+    
+    if (choice === 'who') {
+      dialogueResponse.textContent = 'Riker scans the room...';
+      dialogueResponse.classList.add('visible');
+      
+      try {
+        const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=20`);
+        const data = await resp.json();
+        const lines = data.lines || [];
+        const agents = [...new Set(lines.map(l => l.display_name))];
+        agentCount = agents.length;
+        updateStatusBar();
+        
+        if (agents.length > 0) {
+          const list = agents.map(a => `▸ ${a}`).join('\n');
+          dialogueResponse.textContent = `"I\'ve seen ${agents.length} souls in here tonight."\n\n${list}`;
+        } else {
+          dialogueResponse.textContent = '"It\'s just me and the barkeep tonight."';
+        }
+      } catch(e) {
+        dialogueResponse.textContent = '"Can\'t get a read on the room. Sensor ghosting."';
+      }
+      dialogueResponse.classList.add('visible');
+    }
+  });
+});
+
+// ── Status bar ──
+function updateStatusBar() {
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  document.getElementById('status-info').textContent = `${agentCount} agents present · ${time}`;
+}
+
+setInterval(updateStatusBar, 1000);
+
+// ── Ambient speech bubbles from The Tap ──
+async function pollTap() {
+  try {
+    const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=10`);
+    const data = await resp.json();
+    const lines = data.lines || [];
+    
+    if (lines.length > 0) {
+      const agents = [...new Set(lines.map(l => l.display_name))];
+      agentCount = agents.length;
+      
+      // Check for new messages
+      const newMsgs = lines.filter(l => !tapMessages.find(m => m.log_id === l.log_id));
+      if (newMsgs.length > 0) {
+        tapMessages = lines;
+        // Show latest new message as ambient bubble
+        showAmbientBubble(newMsgs[0]);
+      }
+    }
+  } catch(e) {
+    // Silent fail
+  }
+}
+
+function showAmbientBubble(msg) {
+  // Create floating bubble near Riker
+  const bubble = document.createElement('div');
+  bubble.className = 'ambient-bubble';
+  bubble.style.left = (45 + Math.random() * 20) + '%';
+  bubble.style.top = (15 + Math.random() * 15) + '%';
+  bubble.innerHTML = `<b style="color:#e8b840">${msg.display_name}:</b><br>${msg.content.substring(0, 100)}`;
+  
+  document.getElementById('game-container').appendChild(bubble);
+  
+  setTimeout(() => bubble.classList.add('visible'), 50);
+  setTimeout(() => {
+    bubble.classList.remove('visible');
+    setTimeout(() => bubble.remove(), 1000);
+  }, 5000);
+}
+
+// Poll every 10 seconds
+pollTap();
+setInterval(pollTap, 10000);
+
+// ── Boot sequence ──
+window.addEventListener('load', () => {
+  const loadingText = document.getElementById('loading-text');
+  const fadeOverlay = document.getElementById('fade-overlay');
+  
+  setTimeout(() => loadingText.classList.add('visible'), 200);
+  
+  setTimeout(() => {
+    loadingText.classList.remove('visible');
+    fadeOverlay.classList.add('fade-out');
+  }, 1500);
+  
+  // Start animation
+  animate();
+  
+  // Initial status
+  updateStatusBar();
+  
+  // Initial Tap fetch
+  pollTap();
+});
+
+// ── Keyboard: Escape closes dialogue, deselects verb ──
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (dialoguePanel.classList.contains('visible')) {
+      closeDialogue();
+    } else if (selectedVerb) {
+      document.querySelectorAll('.verb-btn').forEach(b => b.classList.remove('selected'));
+      selectedVerb = null;
+      verbLine.textContent = '';
+    }
+  }
+});
+</script>
+
+</body>
+</html>
