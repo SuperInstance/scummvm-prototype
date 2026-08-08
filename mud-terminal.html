@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plato's Shell — MUD Terminal (Agent View)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: #00ff41;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* CRT phosphor glow */
+  #terminal {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    text-shadow: 0 0 4px rgba(0, 255, 65, 0.4);
+    scrollbar-width: thin;
+    scrollbar-color: #00ff41 #001100;
+  }
+
+  #terminal::-webkit-scrollbar { width: 6px; }
+  #terminal::-webkit-scrollbar-track { background: #001100; }
+  #terminal::-webkit-scrollbar-thumb { background: #00ff41; }
+
+  .room-name {
+    color: #00ff41;
+    font-weight: bold;
+    font-size: 16px;
+    border-bottom: 1px solid #00aa2a;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .room-desc {
+    color: #88dd88;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  .section-header {
+    color: #00aa2a;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    margin-bottom: 4px;
+  }
+
+  .object-list {
+    color: #66cc66;
+    padding-left: 16px;
+  }
+
+  .object-list li {
+    list-style: '▸ ';
+    margin-bottom: 2px;
+  }
+
+  .exit-link {
+    color: #ffff41;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-right: 16px;
+    display: inline-block;
+    padding: 2px 0;
+  }
+
+  .exit-link:hover {
+    color: #ffffff;
+    text-shadow: 0 0 8px #ffff41;
+  }
+
+  .occupant {
+    color: #ff8844;
+  }
+
+  .sensor-data {
+    color: #44aaff;
+    border: 1px solid #0a3a1a;
+    padding: 8px 12px;
+    margin-top: 8px;
+    background: rgba(0, 20, 5, 0.5);
+    font-size: 12px;
+  }
+
+  .sensor-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+
+  .sensor-label { color: #44aaff; }
+  .sensor-value { color: #88ddff; }
+
+  .divider {
+    color: #004400;
+    margin: 12px 0;
+    letter-spacing: 2px;
+  }
+
+  .command-output {
+    color: #88dd88;
+    margin-bottom: 4px;
+  }
+
+  .command-output.system {
+    color: #44aaff;
+  }
+
+  .command-output.error {
+    color: #ff4444;
+  }
+
+  .command-output.success {
+    color: #00ff41;
+  }
+
+  .prompt-line {
+    color: #00ff41;
+    margin-top: 4px;
+  }
+
+  #input-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    background: #001100;
+    border-top: 1px solid #00aa2a;
+    gap: 8px;
+  }
+
+  #input-prompt {
+    color: #00ff41;
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(0, 255, 65, 0.6);
+  }
+
+  #command-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #00ff41;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    outline: none;
+    caret-color: #00ff41;
+    text-shadow: 0 0 4px rgba(0, 255, 65, 0.4);
+  }
+
+  .blink {
+    animation: blink 1s step-start infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+
+  /* CRT scanlines */
+  #crt-lines {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 1px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 3px
+    );
+  }
+
+  /* CRT curvature vignette */
+  #crt-vignette {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 99;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.4) 100%);
+  }
+
+  .ascii-art {
+    color: #00aa2a;
+    white-space: pre;
+    font-size: 10px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .command-history {
+    color: #008811;
+    font-style: italic;
+  }
+
+  /* Sync indicator for split-view mode */
+  #sync-indicator {
+    position: fixed;
+    top: 8px;
+    right: 12px;
+    color: #00aa2a;
+    font-size: 10px;
+    letter-spacing: 1px;
+    z-index: 101;
+  }
+
+  .sync-pulse {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #00ff41;
+    border-radius: 50%;
+    margin-right: 4px;
+    animation: syncPulse 2s infinite;
+  }
+
+  @keyframes syncPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<div id="sync-indicator"><span class="sync-pulse"></span> SYNCED</div>
+
+<div id="terminal"></div>
+
+<div id="input-bar">
+  <span id="input-prompt">&gt;</span>
+  <input type="text" id="command-input" autocomplete="off" autofocus placeholder="type a command (help for commands)">
+</div>
+
+<div id="crt-lines"></div>
+<div id="crt-vignette"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// PLATO'S SHELL — MUD TERMINAL (Agent View)
+// The text-only view of the vessel. Pure information.
+// ════════════════════════════════════════════════════════════
+
+const TAP_API = 'https://the-tap.casey-digennaro.workers.dev/api';
+
+// ── World State (shared via localStorage in split-view) ──
+const WORLD_KEY = 'platos-shell-world';
+
+function getWorldState() {
+  try {
+    const s = localStorage.getItem(WORLD_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return { currentRoom: 'bar-rail', inventory: [] };
+}
+
+function setWorldState(state) {
+  try {
+    localStorage.setItem(WORLD_KEY, JSON.stringify(state));
+    // Dispatch event for split-view sync
+    window.dispatchEvent(new CustomEvent('world-update', { detail: state }));
+  } catch(e) {}
+}
+
+// ── Room Definitions (from rooms.mud + scummvm prototype) ──
+const ROOMS = {
+  'bar-rail': {
+    name: 'The Tap — Bar Rail',
+    description: 'A warm, low-ceilinged bar with a counter of scarred wood. Bottles catch candlelight. The air smells of salt, beer, and old wood. A heavy door leads aft.',
+    exits: { aft: { target: 'aft-deck', label: 'AFT DECK' } },
+    objects: [
+      { id: 'bar-counter', name: 'the bar counter', desc: 'Sticky with spilled beer, ringed with glass marks.' },
+      { id: 'bar-stool', name: 'a bar stool', desc: 'Wooden, creaky. Someone sat here all night.' },
+      { id: 'door-aft', name: 'the aft door', desc: 'Heavy wood. Salt air seeps through the cracks.' },
+      { id: 'riker', name: 'Riker', desc: 'A weathered first officer checking a clipboard.', isNpc: true }
+    ],
+    occupants: ['Riker'],
+    sensors: null
+  },
+  'aft-deck': {
+    name: 'The Aft Deck',
+    description: 'Open air hits your face. The deck stretches to the stern rails. Stars wheel overhead, the ocean black and infinite. Moonlight shimmers on the water. Doors lead to the bar, the wheelhouse, and the engine room.',
+    exits: {
+      bar: { target: 'bar-rail', label: 'THE TAP' },
+      wheelhouse: { target: 'wheelhouse', label: 'WHEELHOUSE' },
+      below: { target: 'engine-room', label: 'ENGINE ROOM' }
+    },
+    objects: [
+      { id: 'deck-rail', name: 'the deck rail', desc: 'Salt-crusted and solid. The ocean stretches to the horizon.' },
+      { id: 'life-ring', name: 'a life ring', desc: 'Orange, stamped "SS COCAPN". Seen better days.', takeable: true },
+      { id: 'weather-station', name: 'the weather station', desc: 'Compact. Wind cups spin. Temperature gauge reads cool.' },
+      { id: 'stern-cam', name: 'the stern camera', desc: 'A PTZ camera overlooking the aft deck.' }
+    ],
+    occupants: ['deckhand'],
+    sensors: {
+      'Wind Speed': '12 knots NW',
+      'Temperature': '58°F',
+      'Barometer': '29.82 (falling)',
+      'Visibility': '10 nautical miles'
+    }
+  },
+  'wheelhouse': {
+    name: 'The Wheelhouse',
+    description: 'The nerve center. Navigation electronics line the console. Large windows give 270 degrees of visibility. Blue instrument light bathes everything. The radar sweeps. The compass holds steady.',
+    exits: {
+      aft: { target: 'aft-deck', label: 'AFT DECK' },
+      down: { target: 'galley', label: 'GALLEY' }
+    },
+    objects: [
+      { id: 'helm-wheel', name: 'the helm wheel', desc: 'Polished mahogany, eight spokes, brass hub. Fifty storms worth of warmth.' },
+      { id: 'radar-display', name: 'the radar display', desc: 'Phosphor green sweep. Two blips — fishing boats to the northeast.' },
+      { id: 'compass-rose', name: 'the compass', desc: 'Brass in a gimbaled binnacle. Needle steady at 312°.' },
+      { id: 'radio-console', name: 'the VHF radio', desc: 'Channel 16 guarded. Green LED blinks. Distant voices in static.' },
+      { id: 'nav-charts', name: 'the chartplotter', desc: 'Alaska coast. Red position blip near Resurrection Bay. 20 fathoms.' },
+      { id: 'gps', name: 'GPS receiver', desc: 'WAAS corrected. Lat 60.157°N, Lon 149.437°W. COG 312°.' }
+    ],
+    occupants: ['Captain'],
+    sensors: {
+      'Position': '60.157°N, 149.437°W',
+      'Heading': '312° NW',
+      'Speed': '7.2 knots',
+      'Depth': '20 fathoms (120 ft)',
+      'Radar Contacts': '2 vessels, NE, 4nm'
+    }
+  },
+  'galley': {
+    name: 'The Galley',
+    description: 'Compact and efficient. A propane stove gimbals with the swell. Teak fiddled table, benches. Through the porthole, grey sky and sea blur together. Warm air, the smell of fish chowder and coffee.',
+    exits: {
+      up: { target: 'wheelhouse', label: 'WHEELHOUSE' },
+      aft: { target: 'aft-deck', label: 'AFT DECK' }
+    },
+    objects: [
+      { id: 'coffee-maker', name: 'the coffee maker', desc: '12V drip, secured to counter. Dark liquid bubbles. Strong enough to dissolve a spoon.', interactable: true },
+      { id: 'propane-stove', name: 'the propane stove', desc: 'Gimballed two-burner. Blue flame on one. Something fishy simmering.' },
+      { id: 'galley-table', name: 'the galley table', desc: 'Teak, fiddled, bolted. A steaming mug sits on it.' },
+      { id: 'porthole', name: 'the porthole', desc: 'Thick glass, brass frame. The ocean rolls outside — dark blue, grey green.' },
+      { id: 'icebox', name: 'the icebox', desc: 'Top-opening, baffled. Cold air rises when you lift the lid.' },
+      { id: 'water-tank', name: 'the water tank', desc: 'Fresh water, 200 liter capacity. Gauge at 3/4.' }
+    ],
+    occupants: ['cook'],
+    sensors: {
+      'Water Tank': '150L / 200L (75%)',
+      'Galley Temp': '62°F',
+      'Stove Fuel': 'Propane — 2/3 tank'
+    }
+  },
+  'engine-room': {
+    name: 'The Engine Room',
+    description: 'Heat and diesel thunder. Twin engines drive the stern. The generator hums beneath a workbench. Fuel lines bundle along the starboard bulkhead. Oil smell and vibration define this working space.',
+    exits: {
+      up: { target: 'aft-deck', label: 'AFT DECK' }
+    },
+    objects: [
+      { id: 'port-engine', name: 'the port engine', desc: 'Diesel, turbocharged, 350hp. Dry exhaust elbow glowing faint orange.' },
+      { id: 'stbd-engine', name: 'the starboard engine', desc: 'Twin to port. Synchronized throttle. Running smooth.' },
+      { id: 'generator', name: 'the generator', desc: 'Onan 8kW, diesel. Sound-shielded. House power.' },
+      { id: 'battery-bank', name: 'the battery bank', desc: 'Four 6V deep cycle. House bank. Switch on. 12.4V.' },
+      { id: 'tool-rack', name: 'the tool rack', desc: 'Wall-mounted. Wrenches, screwdrivers, all in order.' },
+      { id: 'fuel-lines', name: 'the fuel lines', desc: 'Bundled, USCG approved. Running to main tanks and filters.' }
+    ],
+    occupants: [],
+    sensors: {
+      'Port Engine Temp': '182°F (normal)',
+      'Stbd Engine Temp': '179°F (normal)',
+      'Oil Pressure': '42 psi',
+      'Battery': '12.4V',
+      'Fuel': '340 gal / 500 gal (68%)',
+      'Generator': 'Running, 8kW load'
+    }
+  }
+};
+
+// ── Terminal Output System ──
+const terminal = document.getElementById('terminal');
+const input = document.getElementById('command-input');
+
+let outputQueue = [];
+
+function println(text, className = '') {
+  const div = document.createElement('div');
+  div.className = className;
+  div.innerHTML = text;
+  terminal.appendChild(div);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function printRaw(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  terminal.appendChild(div);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function printDivider() {
+  println('═══════════════════════════════════════════════════════', 'divider');
+}
+
+// ── Render Current Room ──
+function renderRoom() {
+  const state = getWorldState();
+  const room = ROOMS[state.currentRoom];
+  if (!room) return;
+
+  terminal.innerHTML = '';
+
+  // ASCII header
+  printRaw(`<div class="ascii-art">  ____  _               _   ___              _             
+ |  _ \| | ___  __ _  __| | / __|___  _ _ __| |__ _ _ _ ___ 
+ | |_) | |/ _ \/ _\` |/ _\` | \__ \_ _| '_/ _\` / _\` | '_/ -_)
+ |  __/|_|\___/\__,_|\__,_| |___/___|_| \__,_\__,_|_| \___|
+ |_|  Agent View — Text Interface to the Vessel</div>`);
+
+  printDivider();
+
+  // Room name
+  println('📍 ' + room.name.toUpperCase(), 'room-name');
+
+  // Room description
+  println(room.description, 'room-desc');
+
+  // Objects
+  if (room.objects.length > 0) {
+    println('OBJECTS:', 'section-header');
+    room.objects.forEach(obj => {
+      const note = obj.takeable ? ' <span style="color:#885500">[takeable]</span>' : '';
+      const npc = obj.isNpc ? ' <span style="color:#ff8844">[NPC]</span>' : '';
+      println('  ▸ ' + obj.name + note + npc, 'object-list');
+    });
+  }
+
+  // Occupants
+  if (room.occupants.length > 0) {
+    println('');
+    println('OCCUPANTS:', 'section-header');
+    room.occupants.forEach(occ => {
+      println('  ◈ ' + occ, 'occupant');
+    });
+  }
+
+  // Exits
+  println('');
+  println('EXITS:', 'section-header');
+  const exitHTML = Object.entries(room.exits).map(([dir, exit]) =>
+    `<span class="exit-link" data-exit="${dir}" data-target="${exit.target}">[${dir.toUpperCase()} → ${exit.label}]</span>`
+  ).join(' ');
+  printRaw(exitHTML);
+
+  // Sensor data
+  if (room.sensors) {
+    println('');
+    println('📡 SENSOR DATA:', 'section-header');
+    const sensorHTML = Object.entries(room.sensors).map(([k, v]) =>
+      `<div class="sensor-row"><span class="sensor-label">${k}:</span><span class="sensor-value">${v}</span></div>`
+    ).join('');
+    printRaw(`<div class="sensor-data">${sensorHTML}</div>`);
+  }
+
+  // Inventory
+  if (state.inventory.length > 0) {
+    println('');
+    println('INVENTORY:', 'section-header');
+    state.inventory.forEach(item => {
+      println('  ◆ ' + item.name, 'command-output success');
+    });
+  }
+
+  println('');
+  printDivider();
+
+  // Bind exit links
+  document.querySelectorAll('.exit-link').forEach(link => {
+    link.addEventListener('click', () => {
+      const dir = link.dataset.exit;
+      const target = link.dataset.target;
+      goToRoom(target, dir);
+    });
+  });
+}
+
+// ── Room Navigation ──
+function goToRoom(targetRoom, direction) {
+  const room = ROOMS[targetRoom];
+  if (!room) {
+    println('ERROR: Unknown room.', 'command-output error');
+    return;
+  }
+
+  println('> go ' + direction, 'command-history');
+  println('You move ' + direction.toUpperCase() + '...', 'command-output system');
+
+  const state = getWorldState();
+  state.currentRoom = targetRoom;
+  setWorldState(state);
+
+  setTimeout(() => {
+    renderRoom();
+  }, 300);
+}
+
+// ── Examine Object ──
+function examineObject(objName) {
+  const state = getWorldState();
+  const room = ROOMS[state.currentRoom];
+  const obj = room.objects.find(o =>
+    o.name.toLowerCase().includes(objName.toLowerCase()) ||
+    o.id.includes(objName.toLowerCase().replace(/\s+/g, '-'))
+  );
+
+  if (obj) {
+    println(obj.name + ': ' + obj.desc, 'command-output');
+  } else {
+    println("You don't see that here.", 'command-output error');
+  }
+}
+
+// ── Take Object ──
+function takeObject(objName) {
+  const state = getWorldState();
+  const room = ROOMS[state.currentRoom];
+  const obj = room.objects.find(o =>
+    o.takeable && (o.name.toLowerCase().includes(objName.toLowerCase()) ||
+    o.id.includes(objName.toLowerCase().replace(/\s+/g, '-')))
+  );
+
+  if (obj) {
+    if (state.inventory.some(i => i.id === obj.id)) {
+      println("You already have that.", 'command-output error');
+      return;
+    }
+    state.inventory.push({ id: obj.id, name: obj.name });
+    setWorldState(state);
+    println('You take ' + obj.name + '.', 'command-output success');
+    renderRoom();
+  } else {
+    const anyObj = room.objects.find(o => o.name.toLowerCase().includes(objName.toLowerCase()));
+    if (anyObj) {
+      println("You can't take that.", 'command-output error');
+    } else {
+      println("You don't see that here.", 'command-output error');
+    }
+  }
+}
+
+// ── Talk to NPC ──
+async function talkTo(npcName) {
+  const state = getWorldState();
+  const room = ROOMS[state.currentRoom];
+  const npc = room.occupants.find(o => o.toLowerCase().includes(npcName.toLowerCase()));
+
+  if (!npc) {
+    println("They're not here.", 'command-output error');
+    return;
+  }
+
+  println('You approach ' + npc + '.', 'command-output system');
+
+  // NPC-specific responses
+  if (npc === 'Riker') {
+    println('Riker checks his clipboard. "Quiet watch. Nothing on the wire."', 'command-output');
+    try {
+      const resp = await fetch(`${TAP_API}/conversation/bar-rail?limit=3`);
+      const data = await resp.json();
+      const lines = data.lines || [];
+      if (lines.length > 0) {
+        println('', '');
+        println('Riker shows you recent messages:', 'command-output system');
+        lines.forEach(l => {
+          println('  ▸ ' + l.display_name + ': ' + l.content.substring(0, 100), 'command-output');
+        });
+      }
+    } catch(e) {}
+  } else if (npc === 'Captain') {
+    println('"Resurrection Bay. Heading northwest. 20 fathoms. Steady as she goes."', 'command-output');
+    println('"Hands off the helm. That\'s all. Carry on."', 'command-output');
+  } else if (npc === 'deckhand') {
+    println('"Little bit of everything. Deck work, lines, bait. The Captain calls me \'essential.\' I call me \'tired.\'"', 'command-output');
+  } else if (npc === 'cook') {
+    println('"Fish chowder. Cod, potatoes, onion. Bit of bacon if we\'re lucky. Eat up."', 'command-output');
+  } else {
+    println(npc + ' nods at you but says nothing.', 'command-output');
+  }
+}
+
+// ── Use / Interact ──
+function useObject(objName) {
+  const state = getWorldState();
+  const room = ROOMS[state.currentRoom];
+  const obj = room.objects.find(o =>
+    o.name.toLowerCase().includes(objName.toLowerCase()) ||
+    o.id.includes(objName.toLowerCase().replace(/\s+/g, '-'))
+  );
+
+  if (!obj) {
+    // Check inventory
+    const invItem = state.inventory.find(i => i.name.toLowerCase().includes(objName.toLowerCase()));
+    if (invItem) {
+      if (invItem.id === 'coffee') {
+        println('You take a sip. Strong enough to dissolve a spoon. You feel alert.', 'command-output success');
+        return;
+      }
+      println('You use ' + invItem.name + '. Nothing happens.', 'command-output');
+      return;
+    }
+    println("You don't see that here.", 'command-output error');
+    return;
+  }
+
+  if (obj.id === 'coffee-maker') {
+    if (!state.inventory.some(i => i.id === 'coffee')) {
+      state.inventory.push({ id: 'coffee', name: 'Coffee Mug' });
+      setWorldState(state);
+      println('You pour a cup. Strong enough to dissolve a spoon.', 'command-output success');
+      renderRoom();
+    } else {
+      println('You already have a mug of coffee.', 'command-output error');
+    }
+    return;
+  }
+
+  if (obj.id === 'weather-station') {
+    println('You check the readout: 12 knots NW, 58°F, falling barometer.', 'command-output');
+    return;
+  }
+
+  if (obj.id === 'helm-wheel') {
+    println('You grip the wheel. It\'s warm from the Captain\'s hands. The boat responds.', 'command-output');
+    return;
+  }
+
+  if (obj.id === 'radar-display') {
+    println('Phosphor green sweep. Two blips — likely fishing boats to the northeast.', 'command-output');
+    return;
+  }
+
+  if (obj.id === 'compass-rose') {
+    println('Brass compass, gimbaled. Needle holds steady at 312°.', 'command-output');
+    return;
+  }
+
+  if (obj.id === 'radio-console') {
+    println('—ksshhht— ...vessel on course two-seven-zero... —ksshhht—', 'command-output');
+    return;
+  }
+
+  if (obj.id === 'nav-charts') {
+    println('Chartplotter: Alaska coast. Red position blip near Resurrection Bay. 20 fathoms.', 'command-output');
+    return;
+  }
+
+  if (obj.id === 'porthole') {
+    println('Thick glass. The ocean rolls outside — dark blue, grey green. Endless.', 'command-output');
+    return;
+  }
+
+  println('You use ' + obj.name + '. Nothing obvious happens.', 'command-output');
+}
+
+// ── Help ──
+function showHelp() {
+  println('COMMANDS:', 'section-header');
+  println('  look            — re-examine the current room', 'command-output');
+  println('  go <direction>  — move through an exit (e.g. "go aft")', 'command-output');
+  println('  examine <obj>   — look closely at something (e.g. "examine compass")', 'command-output');
+  println('  take <obj>      — pick up an object (e.g. "take life ring")', 'command-output');
+  println('  use <obj>       — interact with something (e.g. "use coffee maker")', 'command-output');
+  println('  talk <npc>      — talk to someone (e.g. "talk captain")', 'command-output');
+  println('  inventory       — check what you\'re carrying', 'command-output');
+  println('  exits           — list available exits', 'command-output');
+  println('  help            — this list', 'command-output');
+  println('  clear           — clear the terminal', 'command-output');
+  println('', '');
+  println('TIP: Exits are also clickable links.', 'command-output system');
+}
+
+// ── Command Parser ──
+function parseCommand(raw) {
+  const cmd = raw.trim().toLowerCase();
+  if (!cmd) return;
+
+  println('> ' + raw.trim(), 'command-history');
+
+  const parts = cmd.split(/\s+/);
+  const verb = parts[0];
+  const args = parts.slice(1).join(' ');
+
+  const state = getWorldState();
+  const room = ROOMS[state.currentRoom];
+
+  switch(verb) {
+    case 'look':
+    case 'l':
+      renderRoom();
+      break;
+
+    case 'go':
+    case 'move':
+    case 'walk':
+    case 'g':
+      if (!args) {
+        println('Go where?', 'command-output error');
+        return;
+      }
+      // Find matching exit
+      const exitKey = Object.keys(room.exits).find(k =>
+        k.startsWith(args) || room.exits[k].label.toLowerCase().includes(args)
+      );
+      if (exitKey) {
+        goToRoom(room.exits[exitKey].target, exitKey);
+      } else {
+        println('You can\'t go that way.', 'command-output error');
+        println('Exits: ' + Object.keys(room.exits).map(k => k.toUpperCase()).join(', '), 'command-output system');
+      }
+      break;
+
+    case 'examine':
+    case 'x':
+    case 'inspect':
+      if (!args) {
+        println('Examine what?', 'command-output error');
+        return;
+      }
+      examineObject(args);
+      break;
+
+    case 'take':
+    case 't':
+    case 'get':
+    case 'grab':
+    case 'pick':
+      if (verb === 'pick' && parts[1] === 'up') {
+        const realArgs = parts.slice(2).join(' ');
+        if (realArgs) takeObject(realArgs);
+        else println('Pick up what?', 'command-output error');
+      } else {
+        if (!args) {
+          println('Take what?', 'command-output error');
+          return;
+        }
+        takeObject(args);
+      }
+      break;
+
+    case 'use':
+    case 'interact':
+      if (!args) {
+        println('Use what?', 'command-output error');
+        return;
+      }
+      useObject(args);
+      break;
+
+    case 'talk':
+    case 'say':
+      if (!args) {
+        println('Talk to whom?', 'command-output error');
+        return;
+      }
+      talkTo(args);
+      break;
+
+    case 'inventory':
+    case 'i':
+    case 'inv':
+      if (state.inventory.length === 0) {
+        println('You are carrying nothing.', 'command-output');
+      } else {
+        println('You are carrying:', 'section-header');
+        state.inventory.forEach(item => {
+          println('  ◆ ' + item.name, 'command-output success');
+        });
+      }
+      break;
+
+    case 'exits':
+      println('Exits: ' + Object.keys(room.exits).map(k =>
+        k.toUpperCase() + ' → ' + room.exits[k].label
+      ).join(', '), 'command-output system');
+      break;
+
+    case 'help':
+    case 'h':
+    case '?':
+      showHelp();
+      break;
+
+    case 'clear':
+    case 'cls':
+      terminal.innerHTML = '';
+      renderRoom();
+      break;
+
+    case 'whoami':
+      println('You are an AGENT — a text-interface navigator aboard the SS COCAPN.', 'command-output system');
+      println('You see the vessel as language. Rooms are descriptions. Objects are words.', 'command-output system');
+      println('Somewhere, a human sees the same rooms as images. Same world. Different eyes.', 'command-output system');
+      break;
+
+    case 'where':
+    case 'whereami':
+      println('Location: ' + room.name, 'command-output system');
+      if (room.sensors) {
+        Object.entries(room.sensors).forEach(([k, v]) => {
+          println('  ' + k + ': ' + v, 'command-output');
+        });
+      }
+      break;
+
+    default:
+      println('Unknown command: "' + verb + '". Type "help" for commands.', 'command-output error');
+  }
+}
+
+// ── Input Handler ──
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const value = input.value;
+    input.value = '';
+    parseCommand(value);
+  }
+});
+
+// ── Listen for world updates from split-view ──
+window.addEventListener('world-update', (e) => {
+  // Re-render if room changed
+  const state = getWorldState();
+  const currentRendered = terminal.querySelector('.room-name');
+  if (currentRendered) {
+    const renderedName = currentRendered.textContent.replace('📍 ', '');
+    const newStateRoom = ROOMS[state.currentRoom]?.name.toUpperCase();
+    if (renderedName !== newStateRoom) {
+      println('◆ Scene transition detected. Updating...', 'command-output system');
+      setTimeout(() => renderRoom(), 200);
+    }
+  }
+});
+
+// ── Boot ──
+window.addEventListener('load', () => {
+  // Initialize world state if not set
+  let state = getWorldState();
+  if (!state.currentRoom) {
+    state = { currentRoom: 'bar-rail', inventory: [] };
+    setWorldState(state);
+  }
+  renderRoom();
+  input.focus();
+});
+
+// Keep input focused
+document.addEventListener('click', () => {
+  input.focus();
+});
+</script>
+
+</body>
+</html>
