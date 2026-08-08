@@ -288,10 +288,11 @@ const ROOMS = {
   },
   'aft-deck': {
     name: 'The Aft Deck',
-    description: 'Open air hits your face. The deck stretches to the stern rails. Stars wheel overhead, the ocean black and infinite. Moonlight shimmers on the water. Doors lead to the bar, the wheelhouse, and the engine room.',
+    description: 'Open air hits your face. The deck stretches to the stern rails. Stars wheel overhead, the ocean black and infinite. Moonlight shimmers on the water. Doors lead to the bar (west), the wheelhouse (forward and up), and the engine room (below).',
     exits: {
-      bar: { target: 'bar-rail', label: 'THE TAP' },
-      wheelhouse: { target: 'wheelhouse', label: 'WHEELHOUSE' },
+      west: { target: 'bar-rail', label: 'THE TAP' },
+      forward: { target: 'bar-rail', label: 'THE TAP' },
+      forward_up: { target: 'wheelhouse', label: 'WHEELHOUSE' },
       below: { target: 'engine-room', label: 'ENGINE ROOM' }
     },
     objects: [
