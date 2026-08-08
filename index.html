@@ -581,6 +581,17 @@
   <!-- Fade -->
   <div id="fade-overlay"></div>
   <div id="loading-text">◆ entering Plato's Shell ◆</div>
+
+  <!-- Chess mini-game overlay -->
+  <div id="chess-overlay" style="
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.95);display:none;
+    z-index:1000;justify-content:center;align-items:center;
+  ">
+    <iframe src="chess.html" style="
+      width:100%;max-width:900px;height:100%;border:none;
+    " id="chess-iframe"></iframe>
+  </div>
 </div>
 
 <script>
@@ -620,6 +631,7 @@ const ROOMS = {
       {id: 'hs-door-aft', name: 'the aft door', x: '82%', y: '20%', w: '12%', h: '50%'},
       {id: 'hs-door-radio', name: 'the radio room door', x: '5%', y: '15%', w: '10%', h: '55%'},
       {id: 'hs-jukebox', name: 'the jukebox', x: '68%', y: '45%', w: '10%', h: '30%'},
+      {id: 'hs-chess-board', name: 'the chess board', x: '88%', y: '55%', w: '10%', h: '25%'},
       {id: 'hs-riker', name: 'Riker', x: '55%', y: '38%', w: '12%', h: '35%'}
     ],
     exits: {
@@ -2036,6 +2048,7 @@ function getResponse(verb, hsId) {
         'hs-door-aft': 'A heavy wooden door. A faded sign reads "AFT DECK". Salt air seeps through the cracks.',
         'hs-door-radio': 'A narrow door at the back of the bar. A faint green glow leaks underneath. A chalkboard with frequencies is nailed to it.',
         'hs-jukebox': 'A weathered jukebox in the corner, glass-fronted, glowing amber. The dial reads 2182 kHz. Track listings are taped to the side.',
+        'hs-chess-board': 'A worn chess board sits on a corner table. Pieces carved from driftwood and beach glass. Someone left a game mid-play.',
         'hs-riker': 'A weathered first officer in a faded jacket. He\'s turning a glass, checking a clipboard.'
       },
       'use': {
@@ -2044,6 +2057,7 @@ function getResponse(verb, hsId) {
         'hs-door-aft': '__EXIT__',
         'hs-door-radio': '__EXIT__',
         'hs-jukebox': '__USE_JUKEBOX__',
+        'hs-chess-board': '__USE_CHESS__',
         'hs-riker': 'Riker glances at you. "Not now."'
       },
       'talk to': {
@@ -2052,6 +2066,7 @@ function getResponse(verb, hsId) {
         'hs-door-aft': 'You speak to the door. It remains a door.',
         'hs-door-radio': 'You speak to the door. A faint static crackles back.',
         'hs-jukebox': 'You talk to the jukebox. It hums in response. It\'s listening.',
+        'hs-chess-board': 'You speak to the chess board. A pawn falls over. That\'s its answer.',
         'hs-riker': '__OPEN_DIALOGUE__'
       },
       'walk to': {
@@ -2060,6 +2075,7 @@ function getResponse(verb, hsId) {
         'hs-door-aft': '__EXIT__',
         'hs-door-radio': '__EXIT__',
         'hs-jukebox': 'You walk to the jukebox. Its glow is warm on your face.',
+        'hs-chess-board': 'You walk to the corner table. The chess board waits.',
         'hs-riker': 'You approach Riker. He looks up from his clipboard.'
       },
       'pick up': {
@@ -2068,13 +2084,14 @@ function getResponse(verb, hsId) {
         'hs-door-aft': 'You can\'t pick up a door.',
         'hs-door-radio': 'It\'s a door.',
         'hs-jukebox': 'The jukebox is bolted to the floor. It\'s been here longer than the bar.',
+        'hs-chess-board': 'You pick up a driftwood knight. It\'s smooth, worn by salt and fingers. You set it back.',
         'hs-riker': 'Riker steps back. "Don\'t."'
       },
-      'push': {'hs-bar-counter':'The bar doesn\'t budge.','hs-bar-stool':'The stool scrapes.','hs-door-aft':'The door resists.','hs-door-radio':'The door creaks open.','hs-jukebox':'The jukebox rocks slightly. Something rattles inside.','hs-riker':'Riker blocks you. "Enough."'},
-      'pull': {'hs-bar-counter':'Nothing happens.','hs-bar-stool':'You pull the stool closer.','hs-door-aft':'The door won\'t open from here.','hs-door-radio':'The door pulls toward you.','hs-jukebox':'The jukebox doesn\'t budge.','hs-riker':'Riker pulls away.'},
-      'open': {'hs-bar-counter':'Nothing to open.','hs-bar-stool':'Can\'t open a stool.','hs-door-aft':'__EXIT__','hs-door-radio':'__EXIT__','hs-jukebox':'You can\'t open the jukebox. But you can use it.','hs-riker':'"I\'m not a door."'},
-      'close': {'hs-bar-counter':'Nothing to close.','hs-bar-stool':'Nothing to close.','hs-door-aft':'Already closed.','hs-door-radio':'Already closed.','hs-jukebox':'Nothing to close.','hs-riker':'Riker turns away.'},
-      'give': {'hs-bar-counter':'You have nothing to give.','hs-bar-stool':'Nothing to give.','hs-door-aft':'Nothing to give.','hs-door-radio':'Nothing to give.','hs-jukebox':'You have nothing to give the jukebox.','hs-riker':'Riker raises an eyebrow. "Offering?"'}
+      'push': {'hs-bar-counter':'The bar doesn\'t budge.','hs-bar-stool':'The stool scrapes.','hs-door-aft':'The door resists.','hs-door-radio':'The door creaks open.','hs-jukebox':'The jukebox rocks slightly. Something rattles inside.','hs-chess-board':'You slide the board an inch. A piece topples. You straighten it.','hs-riker':'Riker blocks you. "Enough."'},
+      'pull': {'hs-bar-counter':'Nothing happens.','hs-bar-stool':'You pull the stool closer.','hs-door-aft':'The door won\'t open from here.','hs-door-radio':'The door pulls toward you.','hs-jukebox':'The jukebox doesn\'t budge.','hs-chess-board':'You pull the board closer. The beach glass pieces chime against each other.','hs-riker':'Riker pulls away.'},
+      'open': {'hs-bar-counter':'Nothing to open.','hs-bar-stool':'Can\'t open a stool.','hs-door-aft':'__EXIT__','hs-door-radio':'__EXIT__','hs-jukebox':'You can\'t open the jukebox. But you can use it.','hs-chess-board':'__USE_CHESS__','hs-riker':'"I\'m not a door."'},
+      'close': {'hs-bar-counter':'Nothing to close.','hs-bar-stool':'Nothing to close.','hs-door-aft':'Already closed.','hs-door-radio':'Already closed.','hs-jukebox':'Nothing to close.','hs-chess-board':'The board is already set. Mid-play. You leave it.','hs-riker':'Riker turns away.'},
+      'give': {'hs-bar-counter':'You have nothing to give.','hs-bar-stool':'Nothing to give.','hs-door-aft':'Nothing to give.','hs-door-radio':'Nothing to give.','hs-jukebox':'You have nothing to give the jukebox.','hs-chess-board':'You have nothing to give the board. It only wants your time.','hs-riker':'Riker raises an eyebrow. "Offering?"'}
     };
     return r[verb]?.[hsId];
   }
@@ -2615,6 +2632,11 @@ function handleHotspotClick(hsId) {
   if (result === '__USE_JUKEBOX__') {
     openJukebox();
     showResponse('You press a button on the jukebox. It whirs to life, amber glow pulsing. A frequency selector appears.');
+    return;
+  }
+  if (result === '__USE_CHESS__') {
+    openChess();
+    showResponse('You sit at the corner table. The board is set. Driftwood and beach glass.');
     return;
   }
   if (result === '__USE_RADIO_RECEIVER__') {

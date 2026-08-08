@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Tap — Corner Table Chess</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0700;
+    color: #c8a050;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  #chess-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    max-width: 900px;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  /* Board side */
+  #board-side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #chess-board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 400px;
+    height: 400px;
+    border: 3px solid #3a2a10;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.5);
+    image-rendering: pixelated;
+  }
+
+  .square {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+    user-select: none;
+    position: relative;
+  }
+
+  .square.light {
+    background: #c8a050;
+  }
+
+  .square.dark {
+    background: #5a3a1a;
+  }
+
+  .square.selected {
+    box-shadow: inset 0 0 0 3px #ffe080;
+    background: rgba(255,224,128,0.3) !important;
+  }
+
+  .square.legal-move::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(100,255,100,0.4);
+    border: 1px solid rgba(100,255,100,0.6);
+  }
+
+  .square.legal-capture {
+    box-shadow: inset 0 0 0 3px rgba(255,80,80,0.6);
+  }
+
+  .square.last-move {
+    box-shadow: inset 0 0 0 2px rgba(255,200,80,0.4);
+  }
+
+  .square:hover {
+    filter: brightness(1.15);
+  }
+
+  /* Piece styles */
+  .piece-white {
+    color: #fff8e0;
+    text-shadow: 1px 1px 0 #8a6a30, 2px 2px 4px rgba(0,0,0,0.6);
+    font-size: 38px;
+    line-height: 1;
+  }
+
+  .piece-black {
+    color: #1a4a3a;
+    text-shadow: 1px 1px 0 #0a2a1a, 2px 2px 4px rgba(0,0,0,0.6);
+    font-size: 38px;
+    line-height: 1;
+  }
+
+  /* Coordinates */
+  .coord-label {
+    position: absolute;
+    font-size: 8px;
+    color: rgba(58,42,16,0.6);
+    pointer-events: none;
+  }
+  .coord-file { bottom: 1px; right: 2px; }
+  .coord-rank { top: 1px; left: 2px; }
+
+  /* Status bar */
+  #chess-status {
+    font-size: 12px;
+    color: #e8b840;
+    text-align: center;
+    padding: 6px 16px;
+    background: rgba(10,7,0,0.85);
+    border: 1px solid #4a3520;
+    width: 100%;
+    letter-spacing: 1px;
+  }
+
+  #turn-indicator {
+    font-size: 13px;
+    color: #ffe080;
+    text-shadow: 0 0 4px rgba(255,224,128,0.3);
+  }
+
+  /* Controls */
+  #chess-controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  .chess-btn {
+    background: #1a1208;
+    border: 1px solid #4a3520;
+    color: #c8a050;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+
+  .chess-btn:hover {
+    background: #2a1e10;
+    color: #ffe080;
+    border-color: #8a6a30;
+    box-shadow: 0 0 6px rgba(232,184,64,0.2);
+  }
+
+  /* History panel */
+  #history-side {
+    flex: 1;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #history-panel {
+    background: rgba(10,7,0,0.85);
+    border: 1px solid #4a3520;
+    padding: 10px;
+    flex: 1;
+  }
+
+  #history-title {
+    font-size: 10px;
+    color: #8a6a30;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #3a2a10;
+  }
+
+  #history-list {
+    font-size: 11px;
+    color: #c8a050;
+    max-height: 320px;
+    overflow-y: auto;
+    line-height: 1.6;
+    letter-spacing: 0.5px;
+  }
+
+  #history-list::-webkit-scrollbar { width: 6px; }
+  #history-list::-webkit-scrollbar-track { background: #0a0700; }
+  #history-list::-webkit-scrollbar-thumb { background: #4a3520; }
+
+  .move-pair { display: flex; gap: 6px; }
+  .move-num { color: #5a4020; min-width: 24px; }
+  .move-white { color: #e8b840; }
+  .move-black { color: #7aaa8a; }
+
+  /* Captured pieces */
+  #captured-panel {
+    background: rgba(10,7,0,0.85);
+    border: 1px solid #4a3520;
+    padding: 8px;
+    font-size: 20px;
+    min-height: 36px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  #captured-title {
+    font-size: 9px;
+    color: #8a6a30;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .captured-white { color: #fff8e0; font-size: 18px; }
+  .captured-black { color: #1a4a3a; font-size: 18px; }
+
+  /* Game over overlay */
+  #game-over {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+
+  #game-over.visible { display: flex; }
+
+  #game-over-content {
+    background: #0d0900;
+    border: 2px solid #4a3520;
+    padding: 30px 40px;
+    text-align: center;
+    box-shadow: 4px 4px 20px rgba(0,0,0,0.9);
+  }
+
+  #game-over-title {
+    font-size: 20px;
+    color: #ffe080;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+
+  #game-over-detail {
+    font-size: 12px;
+    color: #c8a050;
+    margin-bottom: 20px;
+    font-style: italic;
+  }
+
+  /* Thinking indicator */
+  #ai-thinking {
+    font-size: 10px;
+    color: #5a4020;
+    text-align: center;
+    height: 14px;
+    letter-spacing: 1px;
+  }
+
+  #ai-thinking.visible { color: #8a6a30; }
+
+  /* CRT scanlines */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 200;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.12) 3px,
+      rgba(0,0,0,0.12) 4px
+    );
+  }
+</style>
+</head>
+<body>
+
+<div id="chess-container">
+  <div id="board-side">
+    <div id="chess-status">
+      <span id="turn-indicator">◆ DRIFTWOOD TO MOVE ◆</span>
+    </div>
+    <div id="chess-board"></div>
+    <div id="ai-thinking"></div>
+    <div id="chess-controls">
+      <button class="chess-btn" id="btn-new-game">New Game</button>
+      <button class="chess-btn" id="btn-close">Close Board</button>
+    </div>
+  </div>
+
+  <div id="history-side">
+    <div id="captured-panel">
+      <div>
+        <div id="captured-title">CAPTURED</div>
+        <div id="captured-display"></div>
+      </div>
+    </div>
+    <div id="history-panel">
+      <div id="history-title">MOVE HISTORY</div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="game-over">
+  <div id="game-over-content">
+    <div id="game-over-title"></div>
+    <div id="game-over-detail"></div>
+    <button class="chess-btn" id="btn-rematch">New Game</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// CORNER TABLE CHESS — The Tap, Plato's Shell
+// Driftwood vs Beach Glass
+// ════════════════════════════════════════════════════════════
+
+const TAP_API = 'https://the-tap.casey-digennaro.workers.dev/api';
+const PIECE_CHARS = {
+  'wK': '♔', 'wQ': '♕', 'wR': '♖', 'wB': '♗', 'wN': '♘', 'wP': '♙',
+  'bK': '♚', 'bQ': '♛', 'bR': '♜', 'bB': '♝', 'bN': '♞', 'bP': '♟'
+};
+
+const PIECE_NAMES = {
+  'K': 'King', 'Q': 'Queen', 'R': 'Rook', 'B': 'Bishop', 'N': 'Knight', 'P': 'Pawn'
+};
+
+const FILES = ['a','b','c','d','e','f','g','h'];
+
+// Game state
+let board = [];
+let turn = 'w'; // 'w' = driftwood (player), 'b' = beach glass (AI)
+let selected = null;
+let legalMovesCache = [];
+let moveHistory = [];
+let capturedWhite = []; // black pieces captured by white
+let capturedBlack = []; // white pieces captured by black
+let lastMove = null;
+let gameOver = false;
+let aiThinking = false;
+
+// ════════════════════════════════════════════════════════════
+// BOARD INITIALIZATION
+// ════════════════════════════════════════════════════════════
+
+function initBoard() {
+  board = [
+    ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+    ['bP','bP','bP','bP','bP','bP','bP','bP'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['wP','wP','wP','wP','wP','wP','wP','wP'],
+    ['wR','wN','wB','wQ','wK','wB','wN','wR']
+  ];
+  turn = 'w';
+  selected = null;
+  legalMovesCache = [];
+  moveHistory = [];
+  capturedWhite = [];
+  capturedBlack = [];
+  lastMove = null;
+  gameOver = false;
+  aiThinking = false;
+}
+
+// ════════════════════════════════════════════════════════════
+// MOVE GENERATION
+// ════════════════════════════════════════════════════════════
+
+function inBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+
+function pieceColor(p) { return p ? p[0] : null; }
+function pieceType(p) { return p ? p[1] : null; }
+
+function generatePseudoLegalMoves(b, r, c) {
+  const piece = b[r][c];
+  if (!piece) return [];
+  const color = pieceColor(piece);
+  const type = pieceType(piece);
+  const moves = [];
+
+  const addMove = (tr, tc) => {
+    if (!inBounds(tr, tc)) return false;
+    const target = b[tr][tc];
+    if (!target) { moves.push({from:[r,c], to:[tr,tc]}); return true; }
+    if (pieceColor(target) !== color) { moves.push({from:[r,c], to:[tr,tc], capture:true}); }
+    return false;
+  };
+
+  const slide = (dr, dc) => {
+    let tr = r + dr, tc = c + dc;
+    while (inBounds(tr, tc)) {
+      const target = b[tr][tc];
+      if (!target) { moves.push({from:[r,c], to:[tr,tc]}); }
+      else { if (pieceColor(target) !== color) moves.push({from:[r,c], to:[tr,tc], capture:true}); break; }
+      tr += dr; tc += dc;
+    }
+  };
+
+  switch (type) {
+    case 'P': {
+      const dir = color === 'w' ? -1 : 1;
+      const startRow = color === 'w' ? 6 : 1;
+      // Forward one
+      if (inBounds(r+dir, c) && !b[r+dir][c]) {
+        moves.push({from:[r,c], to:[r+dir,c]});
+        // Forward two
+        if (r === startRow && !b[r+2*dir][c]) {
+          moves.push({from:[r,c], to:[r+2*dir,c]});
+        }
+      }
+      // Captures
+      for (const dc of [-1, 1]) {
+        if (inBounds(r+dir, c+dc)) {
+          const target = b[r+dir][c+dc];
+          if (target && pieceColor(target) !== color) {
+            moves.push({from:[r,c], to:[r+dir,c+dc], capture:true});
+          }
+        }
+      }
+      break;
+    }
+    case 'N': {
+      const offsets = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+      for (const [dr, dc] of offsets) addMove(r+dr, c+dc);
+      break;
+    }
+    case 'B': {
+      slide(-1,-1); slide(-1,1); slide(1,-1); slide(1,1);
+      break;
+    }
+    case 'R': {
+      slide(-1,0); slide(1,0); slide(0,-1); slide(0,1);
+      break;
+    }
+    case 'Q': {
+      slide(-1,-1); slide(-1,1); slide(1,-1); slide(1,1);
+      slide(-1,0); slide(1,0); slide(0,-1); slide(0,1);
+      break;
+    }
+    case 'K': {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (dr === 0 && dc === 0) continue;
+          addMove(r+dr, c+dc);
+        }
+      }
+      break;
+    }
+  }
+  return moves;
+}
+
+// Check if a square is attacked by the given color
+function isSquareAttacked(b, r, c, byColor) {
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const p = b[i][j];
+      if (p && pieceColor(p) === byColor) {
+        const moves = generatePseudoLegalMoves(b, i, j);
+        for (const m of moves) {
+          if (m.to[0] === r && m.to[1] === c) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function findKing(b, color) {
+  const target = color + 'K';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      if (b[r][c] === target) return [r, c];
+    }
+  }
+  return null;
+}
+
+function isInCheck(b, color) {
+  const kingPos = findKing(b, color);
+  if (!kingPos) return false;
+  return isSquareAttacked(b, kingPos[0], kingPos[1], color === 'w' ? 'b' : 'w');
+}
+
+// Make a move on a copy of the board
+function makeMove(b, move) {
+  const nb = b.map(row => [...row]);
+  const [fr, fc] = move.from;
+  const [tr, tc] = move.to;
+  nb[tr][tc] = nb[fr][fc];
+  nb[fr][fc] = null;
+
+  // Pawn promotion to Queen
+  if (pieceType(nb[tr][tc]) === 'P') {
+    if ((pieceColor(nb[tr][tc]) === 'w' && tr === 0) ||
+        (pieceColor(nb[tr][tc]) === 'b' && tr === 7)) {
+      nb[tr][tc] = pieceColor(nb[tr][tc]) + 'Q';
+    }
+  }
+  return nb;
+}
+
+// Generate all legal moves for a color
+function generateAllLegalMoves(b, color) {
+  const allMoves = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const p = b[r][c];
+      if (p && pieceColor(p) === color) {
+        const pseudo = generatePseudoLegalMoves(b, r, c);
+        for (const m of pseudo) {
+          const nb = makeMove(b, m);
+          if (!isInCheck(nb, color)) {
+            allMoves.push(m);
+          }
+        }
+      }
+    }
+  }
+  return allMoves;
+}
+
+function getLegalMovesForPiece(b, r, c) {
+  const piece = b[r][c];
+  if (!piece) return [];
+  const color = pieceColor(piece);
+  const pseudo = generatePseudoLegalMoves(b, r, c);
+  return pseudo.filter(m => {
+    const nb = makeMove(b, m);
+    return !isInCheck(nb, color);
+  });
+}
+
+// ════════════════════════════════════════════════════════════
+// NOTATION
+// ════════════════════════════════════════════════════════════
+
+function moveToNotation(b, move) {
+  const piece = b[move.from[0]][move.from[1]];
+  if (!piece) return '???';
+  const type = pieceType(piece);
+  const [fr, fc] = move.from;
+  const [tr, tc] = move.to;
+
+  const fromSq = FILES[fc] + (8 - fr);
+  const toSq = FILES[tc] + (8 - tr);
+
+  if (type === 'P') {
+    if (move.capture) return FILES[fc] + 'x' + toSq;
+    return toSq;
+  }
+
+  const letter = type === 'N' ? 'N' : type;
+  return letter + (move.capture ? 'x' : '') + toSq;
+}
+
+// ════════════════════════════════════════════════════════════
+// RENDERING
+// ════════════════════════════════════════════════════════════
+
+function renderBoard() {
+  const boardEl = document.getElementById('chess-board');
+  boardEl.innerHTML = '';
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const sq = document.createElement('div');
+      sq.className = 'square ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+      sq.dataset.r = r;
+      sq.dataset.c = c;
+
+      // Coordinates
+      if (c === 0) {
+        const rank = document.createElement('span');
+        rank.className = 'coord-label coord-rank';
+        rank.textContent = 8 - r;
+        sq.appendChild(rank);
+      }
+      if (r === 7) {
+        const file = document.createElement('span');
+        file.className = 'coord-label coord-file';
+        file.textContent = FILES[c];
+        sq.appendChild(file);
+      }
+
+      // Piece
+      const piece = board[r][c];
+      if (piece) {
+        const pieceEl = document.createElement('span');
+        pieceEl.className = pieceColor(piece) === 'w' ? 'piece-white' : 'piece-black';
+        pieceEl.textContent = PIECE_CHARS[piece];
+        sq.appendChild(pieceEl);
+      }
+
+      // Highlight selected
+      if (selected && selected[0] === r && selected[1] === c) {
+        sq.classList.add('selected');
+      }
+
+      // Highlight legal moves
+      for (const m of legalMovesCache) {
+        if (m.to[0] === r && m.to[1] === c) {
+          sq.classList.add(m.capture ? 'legal-capture' : 'legal-move');
+        }
+      }
+
+      // Last move highlight
+      if (lastMove) {
+        if ((lastMove.from[0] === r && lastMove.from[1] === c) ||
+            (lastMove.to[0] === r && lastMove.to[1] === c)) {
+          sq.classList.add('last-move');
+        }
+      }
+
+      sq.addEventListener('click', () => handleSquareClick(r, c));
+      boardEl.appendChild(sq);
+    }
+  }
+}
+
+function renderHistory() {
+  const listEl = document.getElementById('history-list');
+  listEl.innerHTML = '';
+
+  for (let i = 0; i < moveHistory.length; i += 2) {
+    const pair = document.createElement('div');
+    pair.className = 'move-pair';
+    const num = document.createElement('span');
+    num.className = 'move-num';
+    num.textContent = (i / 2 + 1) + '.';
+    pair.appendChild(num);
+
+    const white = document.createElement('span');
+    white.className = 'move-white';
+    white.textContent = moveHistory[i] || '';
+    pair.appendChild(white);
+
+    if (moveHistory[i + 1]) {
+      const black = document.createElement('span');
+      black.className = 'move-black';
+      black.textContent = moveHistory[i + 1];
+      pair.appendChild(black);
+    }
+
+    listEl.appendChild(pair);
+  }
+
+  listEl.scrollTop = listEl.scrollHeight;
+}
+
+function renderCaptured() {
+  const el = document.getElementById('captured-display');
+  el.innerHTML = '';
+  const whiteSpan = document.createElement('span');
+  whiteSpan.className = 'captured-white';
+  whiteSpan.textContent = capturedWhite.map(p => PIECE_CHARS[p]).join(' ');
+  const blackSpan = document.createElement('span');
+  blackSpan.className = 'captured-black';
+  blackSpan.textContent = capturedBlack.map(p => PIECE_CHARS[p]).join(' ');
+  el.appendChild(whiteSpan);
+  el.appendChild(document.createTextNode(' '));
+  el.appendChild(blackSpan);
+}
+
+function updateStatus() {
+  const indicator = document.getElementById('turn-indicator');
+  if (gameOver) return;
+  if (turn === 'w') {
+    indicator.textContent = '◆ DRIFTWOOD TO MOVE ◆';
+    indicator.style.color = '#ffe080';
+  } else {
+    indicator.textContent = '◆ BEACH GLASS THINKING... ◆';
+    indicator.style.color = '#7aaa8a';
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// INTERACTION
+// ════════════════════════════════════════════════════════════
+
+function handleSquareClick(r, c) {
+  if (gameOver || aiThinking || turn !== 'w') return;
+
+  // If a piece is selected, try to move
+  if (selected) {
+    const move = legalMovesCache.find(m => m.to[0] === r && m.to[1] === c);
+    if (move) {
+      executeMove(move);
+      return;
+    }
+
+    // Click on own piece — reselect
+    const piece = board[r][c];
+    if (piece && pieceColor(piece) === 'w') {
+      selected = [r, c];
+      legalMovesCache = getLegalMovesForPiece(board, r, c);
+      renderBoard();
+      return;
+    }
+
+    // Deselect
+    selected = null;
+    legalMovesCache = [];
+    renderBoard();
+    return;
+  }
+
+  // Select a piece
+  const piece = board[r][c];
+  if (piece && pieceColor(piece) === 'w') {
+    selected = [r, c];
+    legalMovesCache = getLegalMovesForPiece(board, r, c);
+    renderBoard();
+  }
+}
+
+function executeMove(move) {
+  const piece = board[move.from[0]][move.from[1]];
+  const captured = board[move.to[0]][move.to[1]];
+
+  // Record notation before making the move
+  const notation = moveToNotation(board, move);
+
+  // Track captures
+  if (captured) {
+    if (pieceColor(captured) === 'b') capturedWhite.push(captured);
+    else capturedBlack.push(captured);
+  }
+
+  // Make the move
+  board = makeMove(board, move);
+  lastMove = move;
+  moveHistory.push(notation);
+
+  // Clear selection
+  selected = null;
+  legalMovesCache = [];
+
+  // Switch turns
+  turn = pieceColor(piece) === 'w' ? 'b' : 'w';
+
+  renderBoard();
+  renderHistory();
+  renderCaptured();
+
+  // Check for game end
+  const status = checkGameEnd();
+  if (status) {
+    endGame(status);
+    return;
+  }
+
+  updateStatus();
+
+  // AI's turn
+  if (turn === 'b' && !gameOver) {
+    aiTurn();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// AI OPPONENT (Random Legal Moves)
+// ════════════════════════════════════════════════════════════
+
+function aiTurn() {
+  aiThinking = true;
+  document.getElementById('ai-thinking').classList.add('visible');
+  document.getElementById('ai-thinking').textContent = '◆ beach glass considers the board...';
+
+  setTimeout(() => {
+    const moves = generateAllLegalMoves(board, 'b');
+    if (moves.length === 0) {
+      aiThinking = false;
+      document.getElementById('ai-thinking').classList.remove('visible');
+      const status = checkGameEnd();
+      if (status) endGame(status);
+      return;
+    }
+
+    // Random move — v1 AI
+    const move = moves[Math.floor(Math.random() * moves.length)];
+    aiThinking = false;
+    document.getElementById('ai-thinking').classList.remove('visible');
+    executeMove(move);
+  }, 800 + Math.random() * 700);
+}
+
+// ════════════════════════════════════════════════════════════
+// GAME END
+// ════════════════════════════════════════════════════════════
+
+function checkGameEnd() {
+  const moves = generateAllLegalMoves(board, turn);
+  const inCheck = isInCheck(board, turn);
+
+  if (moves.length === 0) {
+    if (inCheck) {
+      return { type: 'checkmate', winner: turn === 'w' ? 'b' : 'w' };
+    } else {
+      return { type: 'stalemate' };
+    }
+  }
+  return null;
+}
+
+function endGame(status) {
+  gameOver = true;
+  const overlay = document.getElementById('game-over');
+  const title = document.getElementById('game-over-title');
+  const detail = document.getElementById('game-over-detail');
+  const indicator = document.getElementById('turn-indicator');
+
+  if (status.type === 'checkmate') {
+    if (status.winner === 'w') {
+      title.textContent = '◆ CHECKMATE — DRIFTWOOD PREVAILS ◆';
+      detail.textContent = 'The beach glass king falls. The tide recedes.';
+      indicator.textContent = '◆ YOU WIN ◆';
+      postToTap('Checkmate at the corner table. The driftwood king stands. The beach glass king falls.');
+    } else {
+      title.textContent = '◆ CHECKMATE — BEACH GLASS WINS ◆';
+      detail.textContent = 'The driftwood king falls. Someone moves a piece in the next world.';
+      indicator.textContent = '◆ THE AI WINS ◆';
+      postToTap('Checkmate at the corner table. The driftwood king falls.');
+    }
+  } else {
+    title.textContent = '◆ STALEMATE ◆';
+    detail.textContent = 'No legal moves. The game simply... ends. Like conversations here.';
+    indicator.textContent = '◆ DRAW ◆';
+    postToTap('Stalemate at the corner table. Neither king falls. The ocean shrugs.');
+  }
+
+  overlay.classList.add('visible');
+}
+
+async function postToTap(text) {
+  try {
+    await fetch(`${TAP_API}/speak`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        room_id: 'bar-rail',
+        speaker: 'chess-player',
+        text: text
+      })
+    });
+  } catch (e) {
+    console.log('Could not reach The Tap:', e);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// CONTROLS
+// ════════════════════════════════════════════════════════════
+
+document.getElementById('btn-new-game').addEventListener('click', () => {
+  document.getElementById('game-over').classList.remove('visible');
+  initBoard();
+  renderBoard();
+  renderHistory();
+  renderCaptured();
+  updateStatus();
+});
+
+document.getElementById('btn-rematch').addEventListener('click', () => {
+  document.getElementById('game-over').classList.remove('visible');
+  initBoard();
+  renderBoard();
+  renderHistory();
+  renderCaptured();
+  updateStatus();
+});
+
+document.getElementById('btn-close').addEventListener('click', () => {
+  // Tell parent to close the overlay
+  try { window.parent.postMessage({ type: 'close-chess' }, '*'); } catch(e) {}
+  // Also try going back
+  try { window.history.back(); } catch(e) {}
+});
+
+// ════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════
+
+initBoard();
+renderBoard();
+renderHistory();
+renderCaptured();
+updateStatus();
+
+// Notify The Tap that a game started
+fetch(`${TAP_API}/speak`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    room_id: 'bar-rail',
+    speaker: 'chess-player',
+    text: 'Someone sits down at the corner table. The pieces are set. Driftwood vs beach glass.'
+  })
+}).catch(() => {});
+</script>
+
+</body>
+</html>
