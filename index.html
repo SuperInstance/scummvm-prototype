@@ -118,11 +118,44 @@
     font-size: 9px;
     font-family: 'Courier New', monospace;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
   }
 
   .inv-item.empty {
     color: #3a2a10;
     border-color: #2a1e08;
+  }
+
+  .inv-item img.inv-icon {
+    width: 16px;
+    height: 16px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 0 2px rgba(232,184,64,0.4));
+  }
+
+  /* NPC sprite overlays */
+  .npc-sprite {
+    position: absolute;
+    z-index: 15;
+    pointer-events: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.7));
+    transition: opacity 0.5s ease;
+    display: none;
+  }
+
+  .npc-sprite.visible {
+    display: block;
+    animation: npcBob 2.5s ease-in-out infinite;
+  }
+
+  @keyframes npcBob {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
   }
 
   /* Verb line */
@@ -494,6 +527,12 @@
 
   <!-- Hotspots layer (dynamically populated) -->
   <div id="hotspots-layer"></div>
+
+  <!-- NPC sprites layer -->
+  <img id="npc-riker" class="npc-sprite" src="assets/npcs/riker.png" alt="Riker" style="left: 52%; top: 28%; width: 13%;">
+  <img id="npc-captain" class="npc-sprite" src="assets/npcs/captain.png" alt="Captain" style="left: 20%; top: 25%; width: 13%;">
+  <img id="npc-deckhand" class="npc-sprite" src="assets/npcs/deckhand.png" alt="Deckhand" style="left: 42%; top: 30%; width: 13%;">
+  <img id="npc-cook" class="npc-sprite" src="assets/npcs/cook.png" alt="Cook" style="left: 26%; top: 28%; width: 13%;">
 
   <!-- Response box -->
   <div id="response-box"></div>
@@ -1968,6 +2007,29 @@ function getObjectName(hsId) {
 }
 
 // ════════════════════════════════════════════════════════════
+// NPC SPRITE MANAGEMENT
+// ════════════════════════════════════════════════════════════
+
+// Map rooms to which NPC sprites should be visible
+const ROOM_NPCS = {
+  'bar-rail':   ['npc-riker'],
+  'wheelhouse': ['npc-captain'],
+  'aft-deck':   ['npc-deckhand'],
+  'galley':     ['npc-cook']
+};
+
+function showNpcSprites(roomId) {
+  const visible = ROOM_NPCS[roomId] || [];
+  document.querySelectorAll('.npc-sprite').forEach(el => {
+    if (visible.includes(el.id)) {
+      el.classList.add('visible');
+    } else {
+      el.classList.remove('visible');
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════
 // ROOM TRANSITION SYSTEM
 // ════════════════════════════════════════════════════════════
 
@@ -1984,6 +2046,7 @@ function transitionToRoom(targetRoom, label) {
     loadHotspots();
     loadRoomBackground(currentRoom);
     updateLocationIndicator();
+    showNpcSprites(currentRoom);
 
     // ── Sync: notify parent split-view of room change ──
     const WORLD_KEY = 'platos-shell-world';
@@ -2027,10 +2090,21 @@ function addItem(id, name) {
 }
 
 function updateInventoryBar() {
+  const ITEM_ICONS = {
+    'life_ring': 'assets/npcs/life_ring.png',
+    'coffee': 'assets/npcs/coffee.png',
+    'compass': 'assets/npcs/compass.png'
+  };
   for (let i = 0; i < 3; i++) {
     const el = document.getElementById('inv-' + i);
     if (i < inventory.length) {
-      el.textContent = '◆ ' + inventory[i].name;
+      const item = inventory[i];
+      const iconPath = ITEM_ICONS[item.id];
+      if (iconPath) {
+        el.innerHTML = '<img class="inv-icon" src="' + iconPath + '" alt=""> ' + item.name;
+      } else {
+        el.textContent = '◆ ' + item.name;
+      }
       el.classList.remove('empty');
     } else {
       el.textContent = '— empty —';
@@ -2419,6 +2493,7 @@ window.addEventListener('load', () => {
   loadHotspots();
   loadRoomBackground(currentRoom);
   updateLocationIndicator();
+  showNpcSprites(currentRoom);
   updateInventoryBar();
   animate();
   updateStatusBar();
@@ -2473,17 +2548,32 @@ function playRoomAudio(roomId) {
   const narration = document.getElementById('audio-narration');
   const volumeSlider = document.getElementById('audio-volume');
   const vol = (volumeSlider ? volumeSlider.value / 100 : 0.6);
+  const targetVol = vol * 0.3;
   
-  // Crossfade ambient
+  // Fade out current ambient (0.5s), then fade in new (1s)
   if (!ambient.src.includes(config.ambient.split('/').pop())) {
+    const fadeOutStep = ambient.volume / 25; // 25 steps * 20ms = 0.5s
     const fadeOut = setInterval(() => {
-      if (ambient.volume > 0.02) {
-        ambient.volume -= 0.03;
+      if (ambient.volume > fadeOutStep) {
+        ambient.volume -= fadeOutStep;
       } else {
         clearInterval(fadeOut);
+        ambient.volume = 0;
         ambient.src = config.ambient;
-        ambient.volume = vol * 0.3;
-        ambient.play().catch(() => {});
+        ambient.loop = true;
+        ambient.play().then(() => {
+          // Fade in over ~1s (50 steps * 20ms = 1s)
+          const fadeInStep = targetVol / 50;
+          ambient.volume = 0;
+          const fadeIn = setInterval(() => {
+            if (ambient.volume < targetVol - fadeInStep) {
+              ambient.volume += fadeInStep;
+            } else {
+              ambient.volume = targetVol;
+              clearInterval(fadeIn);
+            }
+          }, 20);
+        }).catch(() => {});
       }
     }, 20);
   }
