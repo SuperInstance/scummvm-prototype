@@ -2627,6 +2627,11 @@ function transitionToRoom(targetRoom, label) {
     showNpcSprites(currentRoom);
     showObjSprites(currentRoom);
 
+    // ── Apply device-contextual skin for new room ──
+    if (window.DeviceSkin) {
+      window.DeviceSkin.onRoomChange(currentRoom);
+    }
+
     // ── Sync: notify parent split-view of room change ──
     const WORLD_KEY = 'platos-shell-world';
     try {

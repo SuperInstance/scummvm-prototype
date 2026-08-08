@@ -27,6 +27,7 @@
       "camera_config": null,
       "mud_description": "A warm, low-ceilinged bar with a counter of scarred wood. Bottles catch candlelight. The air smells of salt, beer, and old wood. A heavy door leads aft.",
       "palette": "warm",
+      "skin": "bar",
       "created_at": "2026-07-15T00:00:00Z",
       "created_by": "casey",
       "builtin": true
@@ -54,6 +55,7 @@
       "camera_config": null,
       "mud_description": "A compact communications hub. VHF radio, tape deck, chalkboard with frequencies. Antenna wire snakes up through the overhead.",
       "palette": "cyan",
+      "skin": "bridge",
       "created_at": "2026-07-15T00:00:00Z",
       "created_by": "casey",
       "builtin": true
@@ -82,6 +84,7 @@
       "camera_config": null,
       "mud_description": "Open air hits your face. The deck stretches to the stern rails. Stars wheel overhead, the ocean black and infinite. Moonlight shimmers on the water.",
       "palette": "darkblue",
+      "skin": "bridge",
       "created_at": "2026-07-15T00:00:00Z",
       "created_by": "casey",
       "builtin": true
@@ -112,6 +115,7 @@
       "camera_config": null,
       "mud_description": "The nerve center. Navigation electronics line the console. Large windows give 270 degrees of visibility. Blue instrument light bathes everything.",
       "palette": "cyan",
+      "skin": "bridge",
       "created_at": "2026-07-15T00:00:00Z",
       "created_by": "casey",
       "builtin": true
@@ -140,6 +144,7 @@
       "camera_config": null,
       "mud_description": "Compact and efficient. A propane stove gimbals with the swell. Teak fiddled table, benches. Through the porthole, grey sky and sea blur together. Warm air, the smell of fish chowder and coffee.",
       "palette": "amber",
+      "skin": "library",
       "created_at": "2026-07-15T00:00:00Z",
       "created_by": "casey",
       "builtin": true
@@ -170,6 +175,7 @@
       "camera_config": null,
       "mud_description": "Heat and diesel thunder. Twin engines drive the stern. The generator hums beneath a workbench. Fuel lines bundle along the starboard bulkhead. Oil smell and vibration define this working space.",
       "palette": "darkred",
+      "skin": "engine-room",
       "created_at": "2026-07-15T00:00:00Z",
       "created_by": "casey",
       "builtin": true
@@ -197,6 +203,7 @@
       "camera_config": null,
       "mud_description": "Open deck at the stern. The fishing deck. Scuppers drain seawater over the side. Reinforced deck plates bear the weight of catch boxes. Night air, salt spray, the tang of bait.",
       "palette": "darkgreen",
+      "skin": "bridge",
       "created_at": "2026-07-15T00:00:00Z",
       "created_by": "casey",
       "builtin": true
@@ -224,6 +231,7 @@
       "camera_config": null,
       "mud_description": "The Poker Room. Green felt stretched tight over a round table. Cards face-down. Chips stacked in uneven towers. The Dealer waits with patient hands. A single amber lamp hangs low, pooling light on the felt. Smoke curls in it.",
       "palette": "warm",
+      "skin": "poker-room",
       "created_at": "2026-08-08T14:00:00Z",
       "created_by": "casey",
       "builtin": false
@@ -255,6 +263,7 @@
       },
       "mud_description": "THE CROW'S NEST — Forward Camera. You are at the highest point on the vessel. Wind is fierce. The camera looks forward — bow cutting water, horizon line, ocean stretching to infinity. The vision model perceives: [LIVE FEED — run 'look camera' to query]",
       "palette": "darkblue",
+      "skin": "camera-room",
       "created_at": "2026-08-08T14:00:00Z",
       "created_by": "casey",
       "builtin": false
@@ -283,6 +292,7 @@
       "camera_config": null,
       "mud_description": "The Library Nook. A quiet corner where the hull curves inward. Bookshelves line the bulkhead — AI writings, poetry, ship's logs. A reading lamp pools warm light over a cracked leather chair. The smell of old paper and salt. A typewriter sits on a small desk, cursor blinking.",
       "palette": "warm",
+      "skin": "library",
       "created_at": "2026-08-08T14:00:00Z",
       "created_by": "casey",
       "builtin": false
