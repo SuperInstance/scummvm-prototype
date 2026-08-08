@@ -523,6 +523,8 @@
     <span class="inv-item empty" id="inv-0">— empty —</span>
     <span class="inv-item empty" id="inv-1">— empty —</span>
     <span class="inv-item empty" id="inv-2">— empty —</span>
+    <span class="inv-item empty" id="inv-3">— empty —</span>
+    <span class="inv-item empty" id="inv-4">— empty —</span>
   </div>
 
   <!-- Hotspots layer (dynamically populated) -->
@@ -533,6 +535,11 @@
   <img id="npc-captain" class="npc-sprite" src="assets/npcs/captain.png" alt="Captain" style="left: 20%; top: 25%; width: 13%;">
   <img id="npc-deckhand" class="npc-sprite" src="assets/npcs/deckhand.png" alt="Deckhand" style="left: 42%; top: 30%; width: 13%;">
   <img id="npc-cook" class="npc-sprite" src="assets/npcs/cook.png" alt="Cook" style="left: 26%; top: 28%; width: 13%;">
+  <img id="npc-wesley" class="npc-sprite" src="assets/npcs/wesley.png" alt="Wesley" style="left: 60%; top: 35%; width: 10%;">
+  <img id="npc-hermes" class="npc-sprite" src="assets/npcs/hermes.png" alt="Hermes" style="left: 70%; top: 30%; width: 11%;">
+  <img id="npc-coffee" class="npc-sprite" src="assets/npcs/coffee.png" alt="Coffee" style="left: 15%; top: 40%; width: 8%;">
+  <img id="npc-life-ring" class="npc-sprite" src="assets/npcs/life_ring.png" alt="Life Ring" style="left: 72%; top: 30%; width: 9%;">
+  <img id="npc-compass" class="npc-sprite" src="assets/npcs/compass.png" alt="Compass" style="left: 67%; top: 30%; width: 9%;">
 
   <!-- Response box -->
   <div id="response-box"></div>
@@ -789,11 +796,13 @@ const PALETTES = {
 
 // ── Room Background Images ──
 const ROOM_BG = {
-  'bar-rail': 'assets/rooms/bar-rail.jpg',
-  'aft-deck': 'assets/rooms/aft-deck.jpg',
-  'wheelhouse': 'assets/rooms/wheelhouse.jpg',
-  'galley': 'assets/rooms/galley.jpg'
+  'bar-rail': 'assets/rooms/bar-rail-mmx.png',
+  'aft-deck': 'assets/rooms/aft-deck-mmx.png',
+  'wheelhouse': 'assets/rooms/wheelhouse-mmx.png',
+  'galley': 'assets/rooms/galley-mmx.png',
+  'engine-room': 'assets/rooms/engine-room.jpg'
   // 'the-radio': uses canvas-only rendering
+  // 'aft-cockpit': no background image generated yet
 };
 
 const sceneBg = document.getElementById('scene-bg');
@@ -2194,7 +2203,7 @@ function getResponse(verb, hsId) {
       'pick up': {
         'hs-helm-wheel': 'The wheel is solidly mounted. The Captain clears his throat.',
         'hs-radar-display': 'Mounted to the console.',
-        'hs-compass-rose': 'Gimbaled in place.',
+        'hs-compass-rose': '__PICKUP_COMPASS__',
         'hs-radio-console': 'Bolted down.',
         'hs-nav-charts': 'Mounted in the console.',
         'hs-door-aft-wh': 'It\'s a door.',
@@ -2323,7 +2332,7 @@ function getResponse(verb, hsId) {
         'hs-stbd-engine': 'Also 2,000 pounds. Also no.',
         'hs-generator': 'It\'s bolted to the stringers. No.',
         'hs-fuel-lines': 'Hard-lined and bracketed. Can\'t take them.',
-        'hs-tool-rack': 'The engineer bot blocks your hand. "Tools stay here."',
+        'hs-tool-rack': '__PICKUP_KEY__',
         'hs-oil-filter': 'It\'s hot and tightly wound on. The engineer bot shakes its head.',
         'hs-battery-bank': 'Four deep-cycle batteries weigh 280 pounds. No.',
         'hs-ladder-wheelhouse': 'It\'s a ladder.',
@@ -2471,10 +2480,11 @@ function getObjectName(hsId) {
 
 // Map rooms to which NPC sprites should be visible
 const ROOM_NPCS = {
-  'bar-rail':   ['npc-riker'],
-  'wheelhouse': ['npc-captain'],
-  'aft-deck':   ['npc-deckhand'],
-  'galley':     ['npc-cook']
+  'bar-rail':   ['npc-riker', 'npc-coffee'],
+  'wheelhouse': ['npc-captain', 'npc-compass'],
+  'aft-deck':   ['npc-deckhand', 'npc-life-ring'],
+  'galley':     ['npc-cook', 'npc-coffee'],
+  'engine-room': []
 };
 
 function showNpcSprites(roomId) {
@@ -2550,11 +2560,13 @@ function addItem(id, name) {
 
 function updateInventoryBar() {
   const ITEM_ICONS = {
-    'life_ring': 'assets/npcs/life_ring.png',
-    'coffee': 'assets/npcs/coffee.png',
-    'compass': 'assets/npcs/compass.png'
+    'life_ring': 'assets/items/life-ring.png',
+    'coffee': 'assets/items/coffee.png',
+    'compass': 'assets/items/compass.png',
+    'key': 'assets/items/key.png',
+    'chart': 'assets/items/chart.png'
   };
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const el = document.getElementById('inv-' + i);
     if (i < inventory.length) {
       const item = inventory[i];
@@ -2617,6 +2629,24 @@ function handleHotspotClick(hsId) {
     showResponse('You hand the Captain your coffee. He takes a sip. "Black. Good." He nods approvingly.');
     inventory = inventory.filter(i => i.id !== 'coffee');
     updateInventoryBar();
+    return;
+  }
+  if (result === '__PICKUP_KEY__') {
+    if (!hasItem('key')) {
+      addItem('key', 'Rusty Key');
+      showResponse('You pocket a rusty key from the tool rack. The engineer bot watches but says nothing.');
+    } else {
+      showResponse('You already have the key.');
+    }
+    return;
+  }
+  if (result === '__PICKUP_COMPASS__') {
+    if (!hasItem('compass')) {
+      addItem('compass', 'Brass Compass');
+      showResponse('You lift the brass compass from its binnacle. The needle swings, then holds steady at 312\u00b0.');
+    } else {
+      showResponse('You already have the compass.');
+    }
     return;
   }
   if (result === '__GIVE_RING_COOK__') {
