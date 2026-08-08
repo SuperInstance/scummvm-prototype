@@ -3281,6 +3281,7 @@ function playRoomAudio(roomId) {
 <script src="src/room-loader.js"></script>
 <script src="src/camera-room.js"></script>
 <script src="src/warp-system.js"></script>
+<script src="src/twin-mode.js"></script>
 <script>
   // Initialize Living World after everything else loads
   window.addEventListener('load', () => {
@@ -3289,7 +3290,8 @@ function playRoomAudio(roomId) {
         LivingWorld.injectAllScummRooms();
         if (window.CameraRoom) CameraRoom.init();
         if (window.WarpSystem) WarpSystem.initScumm();
-        console.log('[Living World] Framework initialized in ScummVM');
+        if (window.TwinMode) TwinMode.init();
+        console.log('[Living World] Framework initialized in ScummVM + TwinMode');
       }).catch(err => {
         console.warn('[Living World] Init failed:', err);
       });

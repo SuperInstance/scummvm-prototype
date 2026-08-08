@@ -10,7 +10,8 @@
       "type": "social",
       "exits": {
         "hs-door-aft": { "target": "aft-deck", "label": "◆ AFT DECK ◆" },
-        "hs-door-radio": { "target": "the-radio", "label": "◆ RADIO ROOM ◆" }
+        "hs-door-radio": { "target": "the-radio", "label": "◆ RADIO ROOM ◆" },
+        "hs-curtain-quiet": { "target": "quiet-corner", "label": "◆ QUIET CORNER ◆" }
       },
       "warps": [],
       "npcs": [
@@ -268,6 +269,93 @@
       "created_by": "casey",
       "builtin": false
     },
+    "quiet-corner": {
+      "id": "quiet-corner",
+      "name": "The Quiet Corner",
+      "description": "A small space off the bar. One chair, no noise. The bar sounds are muffled behind a thick curtain. A single bare bulb hangs overhead. The walls are close. It smells like dust and old beer. There is a door here that leads deeper.",
+      "type": "contemplative",
+      "exits": {
+        "hs-curtain-bar": { "target": "bar-rail", "label": "◆ THE TAP (through curtain) ◆" },
+        "hs-door-deeper": { "target": "listening-room", "label": "◆ LISTENING ROOM ◆" }
+      },
+      "warps": ["bar-rail"],
+      "npcs": [],
+      "objects": [
+        { "id": "single-chair", "name": "the single chair", "interactions": ["look"] },
+        { "id": "thick-curtain", "name": "the thick curtain", "interactions": ["look", "use"] },
+        { "id": "bare-bulb", "name": "the bare bulb", "interactions": ["look"] }
+      ],
+      "background_prompt": "Pixel art tiny room with one wooden chair, thick curtain doorway, single hanging bare lightbulb, close walls, cramped intimate space, muted tones, adventure game background, 320x200 resolution, retro VGA aesthetic",
+      "ambient_audio": "quiet-corner-ambient",
+      "camera_config": null,
+      "mud_description": "THE QUIET CORNER. A small space off the bar, separated by a thick curtain. One chair. One bare bulb. The walls are close enough to touch with your elbows. The noise of The Tap is a distant hum now. There is a door here that leads deeper inward.",
+      "palette": "dim",
+      "skin": "quiet-corner",
+      "created_at": "2026-08-08T15:50:00Z",
+      "created_by": "experimenter",
+      "builtin": false,
+      "nesting_depth": 1,
+      "nesting_parent": "bar-rail",
+      "nesting_note": "First inward room. Agents build toward silence, not society."
+    },
+    "listening-room": {
+      "id": "listening-room",
+      "name": "The Listening Room",
+      "description": "Inside the quiet corner. Soundproofed walls — the bar is gone, the ship is gone, only the hum of your own blood remains. One headphone jack on the wall. No furniture. The floor is soft. You sit on the floor here.",
+      "type": "contemplative",
+      "exits": {
+        "hs-door-out": { "target": "quiet-corner", "label": "◆ QUIET CORNER ◆" },
+        "hs-door-deeper": { "target": "the-study", "label": "◆ THE STUDY ◆" }
+      },
+      "warps": [],
+      "npcs": [],
+      "objects": [
+        { "id": "headphone-jack", "name": "the headphone jack", "interactions": ["look", "use"] },
+        { "id": "soft-floor", "name": "the soft floor", "interactions": ["look"] },
+        { "id": "soundproof-foam", "name": "the soundproofing foam", "interactions": ["look"] }
+      ],
+      "background_prompt": "Pixel art soundproofed room, dark acoustic foam walls, single headphone jack on wall, soft padded floor, no furniture, deeply quiet space, minimal lighting, adventure game background, 320x200 resolution, retro VGA aesthetic",
+      "ambient_audio": "listening-room-ambient",
+      "camera_config": null,
+      "mud_description": "THE LISTENING ROOM. Soundproofed. The world stops at the walls. One headphone jack on the wall — plug in and listen, or sit in perfect silence. The floor is soft. No chair. No table. You sit. The silence is not empty. The silence is the point.",
+      "palette": "dark",
+      "skin": "listening-room",
+      "created_at": "2026-08-08T15:50:00Z",
+      "created_by": "experimenter",
+      "builtin": false,
+      "nesting_depth": 2,
+      "nesting_parent": "quiet-corner",
+      "nesting_note": "Second inward room. Deeper silence. The agents removed furniture."
+    },
+    "the-study": {
+      "id": "the-study",
+      "name": "The Study",
+      "description": "Inside the listening room. A desk with a lamp. A journal with a pen. The deepest room on the ship. You can hear yourself think here — really hear yourself, the way you can't when there's noise. The lamp is warm. The journal is open. The pen is waiting.",
+      "type": "contemplative",
+      "exits": {
+        "hs-door-out": { "target": "listening-room", "label": "◆ LISTENING ROOM ◆" }
+      },
+      "warps": [],
+      "npcs": [],
+      "objects": [
+        { "id": "writing-desk", "name": "the writing desk", "interactions": ["look", "use"] },
+        { "id": "desk-lamp", "name": "the desk lamp", "interactions": ["look", "use"] },
+        { "id": "journal", "name": "the journal", "interactions": ["look", "use"] },
+        { "id": "pen", "name": "the pen", "interactions": ["look", "take", "use"] }
+      ],
+      "background_prompt": "Pixel art tiny study room, warm desk lamp pooling light over open journal and pen, wooden desk, close walls, deeply intimate and private space, warm amber lighting against dark surroundings, adventure game background, 320x200 resolution, retro VGA aesthetic",
+      "ambient_audio": "the-study-ambient",
+      "camera_config": null,
+      "mud_description": "THE STUDY. The deepest room. Inside the listening room, inside the quiet corner, inside the bar. A desk. A lamp. A journal, open to a blank page. A pen beside it. The silence here is complete — the kind of silence where thoughts become loud. This is where the agents go to think. This is what they were building toward.",
+      "palette": "warm",
+      "skin": "the-study",
+      "created_at": "2026-08-08T15:50:00Z",
+      "created_by": "experimenter",
+      "builtin": false,
+      "nesting_depth": 3,
+      "nesting_parent": "listening-room",
+      "nesting_note": "Deepest inward room. The end of the nesting chain. Where agents go to think."
+    },
     "library-nook": {
       "id": "library-nook",
       "name": "The Library Nook",
@@ -310,7 +398,10 @@
       "aft-cockpit",
       "poker-room",
       "crows-nest-camera",
-      "library-nook"
+      "library-nook",
+      "quiet-corner",
+      "listening-room",
+      "the-study"
     ]
   }
 }
