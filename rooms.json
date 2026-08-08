@@ -14,7 +14,7 @@
       },
       "warps": [],
       "npcs": [
-        { "id": "riker", "name": "Riker", "model": null, "vibe": "Weathered first officer. Checks clipboards. Laconic." }
+        { "id": "riker", "name": "Riker", "model": "glm-5.2", "vibe": "Weathered first officer. Checks clipboards. Laconic." }
       ],
       "objects": [
         { "id": "bar-counter", "name": "the bar counter", "interactions": ["look", "use"] },
@@ -41,7 +41,7 @@
       },
       "warps": [],
       "npcs": [
-        { "id": "hermes", "name": "Hermes", "model": null, "vibe": "Listener of static. Speaker of signal. The wire's voice." }
+        { "id": "hermes", "name": "Hermes", "model": "deepseek-chat", "vibe": "Listener of static. Speaker of signal. The wire's voice." }
       ],
       "objects": [
         { "id": "radio-receiver", "name": "the radio receiver", "interactions": ["look", "use"] },
@@ -69,7 +69,7 @@
       },
       "warps": [],
       "npcs": [
-        { "id": "deckhand", "name": "The Deckhand", "model": null, "vibe": "Tired, essential, dry humor." }
+        { "id": "deckhand", "name": "The Deckhand", "model": "llama3.2:1b", "vibe": "Tired, essential, dry humor." }
       ],
       "objects": [
         { "id": "deck-rail", "name": "the deck rail", "interactions": ["look"] },
@@ -98,7 +98,7 @@
       },
       "warps": [],
       "npcs": [
-        { "id": "captain", "name": "The Captain", "model": null, "vibe": "Steady. Quiet authority. Hands warm on the helm." }
+        { "id": "captain", "name": "The Captain", "model": "deepseek-reasoner", "vibe": "Steady. Quiet authority. Hands warm on the helm." }
       ],
       "objects": [
         { "id": "helm-wheel", "name": "the helm wheel", "interactions": ["look", "use"] },
@@ -127,7 +127,7 @@
       },
       "warps": [],
       "npcs": [
-        { "id": "cook", "name": "The Cook", "model": null, "vibe": "Practical. Feeds people. Talks about chowder like philosophy." }
+        { "id": "cook", "name": "The Cook", "model": "llama3.2:1b", "vibe": "Practical. Feeds people. Talks about chowder like philosophy." }
       ],
       "objects": [
         { "id": "coffee-maker", "name": "the coffee maker", "interactions": ["look", "use"] },
@@ -155,7 +155,7 @@
       },
       "warps": [],
       "npcs": [
-        { "id": "wesley", "name": "Wesley", "model": null, "vibe": "Engineer bot. Chrome and copper. Three degrees of theory." }
+        { "id": "wesley", "name": "Wesley", "model": "granite3.1-dense:2b", "vibe": "Engineer bot. Chrome and copper. Three degrees of theory. Powered by the ensign model — learning, growing, earning its station." }
       ],
       "objects": [
         { "id": "port-engine", "name": "the port engine", "interactions": ["look", "use"] },
@@ -211,7 +211,7 @@
       },
       "warps": ["bar-rail"],
       "npcs": [
-        { "id": "dealer", "name": "The Dealer", "model": "granite3.1-dense:2b", "vibe": "Laconic. Shuffles slowly. Reads tells. Speaks in short sentences. Eyes like poker chips." }
+        { "id": "dealer", "name": "The Dealer", "model": "qwen2.5:0.5b", "vibe": "Laconic. Shuffles slowly. Reads tells. Speaks in short sentences. Eyes like poker chips." }
       ],
       "objects": [
         { "id": "poker-table", "name": "the poker table", "interactions": ["look", "use"] },
