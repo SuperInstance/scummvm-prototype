@@ -1,0 +1,61 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-08-08T12:15:00-09:00",
+  "engine": {
+    "tts": "Qwen/Qwen3-TTS via DeepInfra",
+    "ambient": "ffmpeg procedural noise generation"
+  },
+  "rooms": {
+    "bar-rail": {
+      "name": "The Tap",
+      "mix": "bar-rail.wav",
+      "ambient": "bar-rail-ambient.wav",
+      "narration": "bar-rail-tts.wav",
+      "voice": "Eric",
+      "description": "Low tavern murmur, glass clinks, wood creaking, distant foghorn",
+      "mood": "enclosed-warm-muffled"
+    },
+    "aft-deck": {
+      "name": "Aft Deck",
+      "mix": "aft-deck.wav",
+      "ambient": "aft-deck-ambient.wav",
+      "narration": "aft-deck-tts.wav",
+      "voice": "Ryan",
+      "description": "Ocean waves, wind in rigging, creaking deck planks, seabirds",
+      "mood": "open-bright-cold"
+    },
+    "wheelhouse": {
+      "name": "Wheelhouse",
+      "mix": "wheelhouse.wav",
+      "ambient": "wheelhouse-ambient.wav",
+      "narration": "wheelhouse-tts.wav",
+      "voice": "Vivian",
+      "description": "Engine hum, radio static bursts, electronic beeping, compass gimbal",
+      "mood": "electronic-precise-dim"
+    },
+    "galley": {
+      "name": "Galley",
+      "mix": "galley.wav",
+      "ambient": "galley-ambient.wav",
+      "narration": "galley-tts.wav",
+      "voice": "Serena",
+      "description": "Propane flame hiss, pot bubbling, cutlery on plates, coffee dripping",
+      "mood": "domestic-warm-confined"
+    },
+    "engine-room": {
+      "name": "Engine Room",
+      "mix": "engine-room.wav",
+      "ambient": "engine-room-ambient.wav",
+      "narration": "engine-room-tts.wav",
+      "voice": "Dylan",
+      "description": "Deep diesel rumble, mechanical clanking, fuel pump whine, ventilation fan",
+      "mood": "industrial-dangerous-resonant"
+    }
+  },
+  "settings": {
+    "ambientLoop": true,
+    "narrationPlayOnce": true,
+    "defaultVolume": 0.6,
+    "crossfadeMs": 800
+  }
+}

@@ -360,26 +360,56 @@ const ROOMS = {
   },
   'engine-room': {
     name: 'The Engine Room',
-    description: 'Heat and diesel thunder. Twin engines drive the stern. The generator hums beneath a workbench. Fuel lines bundle along the starboard bulkhead. Oil smell and vibration define this working space.',
+    description: 'Heat and diesel thunder. Twin engines drive the stern. The generator hums beneath a workbench. Fuel lines bundle along the starboard bulkhead. Oil smell and vibration define this working space. Orange glow from the exhaust elbows lights the steel bulkheads.',
     exits: {
-      up: { target: 'aft-deck', label: 'AFT DECK' }
+      up: { target: 'wheelhouse', label: 'WHEELHOUSE' },
+      forward: { target: 'aft-cockpit', label: 'AFT COCKPIT' },
+      cockpit: { target: 'aft-cockpit', label: 'AFT COCKPIT' }
     },
     objects: [
-      { id: 'port-engine', name: 'the port engine', desc: 'Diesel, turbocharged, 350hp. Dry exhaust elbow glowing faint orange.' },
-      { id: 'stbd-engine', name: 'the starboard engine', desc: 'Twin to port. Synchronized throttle. Running smooth.' },
-      { id: 'generator', name: 'the generator', desc: 'Onan 8kW, diesel. Sound-shielded. House power.' },
+      { id: 'port-engine', name: 'the port engine', desc: 'Diesel, turbocharged, 350hp. Dry exhaust elbow glowing faint orange. Running at 185°F.' },
+      { id: 'stbd-engine', name: 'the starboard engine', desc: 'Twin to port. Synchronized throttle. Running smooth at 182°F.' },
+      { id: 'generator', name: 'the generator', desc: 'Onan 8kW, diesel. Sound-shielded. House power. Vibrating steadily.' },
       { id: 'battery-bank', name: 'the battery bank', desc: 'Four 6V deep cycle. House bank. Switch on. 12.4V.' },
-      { id: 'tool-rack', name: 'the tool rack', desc: 'Wall-mounted. Wrenches, screwdrivers, all in order.' },
-      { id: 'fuel-lines', name: 'the fuel lines', desc: 'Bundled, USCG approved. Running to main tanks and filters.' }
+      { id: 'tool-rack', name: 'the tool rack', desc: 'Wall-mounted. Wrenches, screwdrivers, all in order. The engineer bot keeps it pristine.' },
+      { id: 'fuel-lines', name: 'the fuel lines', desc: 'Bundled, USCG approved. Running to main tanks and filters. Smell of diesel.' },
+      { id: 'oil-filter', name: 'the oil filter', desc: 'Spin-on oil filter, warm to the touch. Spare filters stored below.' },
+      { id: 'engineer-bot', name: 'the engineer bot', desc: 'A compact maintenance robot. Chrome and copper, glowing orange eyes. It adjusts tools with mechanical precision.', isNpc: true }
+    ],
+    occupants: ['engineer bot'],
+    sensors: {
+      'Port Engine Temp': '185°F (normal)',
+      'Stbd Engine Temp': '182°F (normal)',
+      'Oil Pressure': '42 psi',
+      'Battery': '12.4V',
+      'Fuel': '390 gal / 500 gal (78%)',
+      'Generator': 'Running, 8kW load'
+    }
+  },
+  'aft-cockpit': {
+    name: 'The Aft Cockpit',
+    description: 'Open deck at the stern. The fishing deck. Scuppers drain seawater over the side. Reinforced deck plates bear the weight of catch boxes. Night air, salt spray, the tang of bait. The fishfinder pings. Downrigger posts stand ready. The ocean stretches dark and wide under stars.',
+    exits: {
+      below: { target: 'engine-room', label: 'ENGINE ROOM' },
+      engine: { target: 'engine-room', label: 'ENGINE ROOM' },
+      bar: { target: 'bar-rail', label: 'THE TAP' },
+      in: { target: 'bar-rail', label: 'THE TAP' }
+    },
+    objects: [
+      { id: 'stern-drive', name: 'the stern drive', desc: 'Bravo Three, counter-rotating props. Twin drive legs below the waterline. Propellers churning.' },
+      { id: 'trim-tabs', name: 'the trim tabs', desc: 'Lenco trim tabs, port and starboard. Hydraulic rams. They control the running attitude.' },
+      { id: 'fishfinder', name: 'the fishfinder', desc: 'Color sonar. Concentric circles pulse outward. Bottom at 20 fathoms. Fish arches at 8 and 12 fathoms.' },
+      { id: 'downrigger-posts', name: 'the downrigger posts', desc: 'Dual mounts, heavy aluminum. Cable spools, release clips. Ready for salmon season.' },
+      { id: 'bait-well', name: 'the bait well', desc: 'Live bait well, recirculating pump. Herring swirl under the LED light.' },
+      { id: 'transom-sump', name: 'the transom sump', desc: 'Sump box with automatic pump. Clean grate. Green LED pulses.' }
     ],
     occupants: [],
     sensors: {
-      'Port Engine Temp': '182°F (normal)',
-      'Stbd Engine Temp': '179°F (normal)',
-      'Oil Pressure': '42 psi',
-      'Battery': '12.4V',
-      'Fuel': '340 gal / 500 gal (68%)',
-      'Generator': 'Running, 8kW load'
+      'Depth': '20 fathoms (120 ft)',
+      'Water Temp': '52°F',
+      'Catch Count': '0 (none aboard)',
+      'Downrigger Depth': 'Not set',
+      'Bait Status': 'Live herring, 2 dozen'
     }
   }
 };
@@ -591,6 +621,9 @@ async function talkTo(npcName) {
     println('"Little bit of everything. Deck work, lines, bait. The Captain calls me \'essential.\' I call me \'tired.\'"', 'command-output');
   } else if (npc === 'cook') {
     println('"Fish chowder. Cod, potatoes, onion. Bit of bacon if we\'re lucky. Eat up."', 'command-output');
+  } else if (npc === 'engineer bot' || npc.toLowerCase().includes('engineer')) {
+    println('The engineer bot\'s orange eyes flicker. "All systems green. Port 185, starboard 182. Oil pressure 42 psi. Fuel at 78 percent."', 'command-output');
+    println('"The starboard runs three degrees cooler than port. I have a theory about airflow. It is... inconclusive."', 'command-output');
   } else {
     println(npc + ' nods at you but says nothing.', 'command-output');
   }

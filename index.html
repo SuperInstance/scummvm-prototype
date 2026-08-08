@@ -27,6 +27,19 @@
     image-rendering: pixelated;
   }
 
+  #scene-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    z-index: 1;
+    display: none; /* shown via JS when image loads */
+  }
+
   #scene-canvas {
     position: absolute;
     top: 0;
@@ -35,6 +48,7 @@
     height: 100%;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    z-index: 2;
   }
 
   /* CRT scanlines */
@@ -346,7 +360,7 @@
   #room-transition {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: #000;
+    background: #000 url('assets/rooms/transition.jpg') center/cover;
     z-index: 150;
     pointer-events: none;
     opacity: 0;
@@ -358,9 +372,60 @@
     transition: opacity 0.5s ease;
     letter-spacing: 2px;
     text-align: center;
+    image-rendering: pixelated;
   }
 
   #room-transition.visible { opacity: 1; }
+
+  /* Audio control */
+  #audio-control {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.5);
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(136,80,16,0.5);
+  }
+  #audio-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0;
+    line-height: 1;
+    filter: grayscale(0.3) sepia(0.3);
+  }
+  #audio-toggle:hover { filter: none; }
+  #audio-volume {
+    width: 60px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #3a2208;
+    outline: none;
+    border-radius: 2px;
+  }
+  #audio-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    background: #e8b840;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  #audio-volume::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    background: #e8b840;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+  }
 
   /* Radar sweep animation */
   @keyframes radarSweep {
@@ -385,11 +450,32 @@
     0%, 100% { opacity: 0.3; }
     50% { opacity: 0.6; }
   }
+
+  /* Engine glow pulse */
+  @keyframes engineGlow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  /* Generator vibration */
+  @keyframes generatorVibe {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(0.5px, -0.3px); }
+    50% { transform: translate(-0.3px, 0.5px); }
+    75% { transform: translate(0.4px, 0.2px); }
+  }
+
+  /* Sonar ping */
+  @keyframes sonarPing {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(3); opacity: 0; }
+  }
 </style>
 </head>
 <body>
 
 <div id="game-container">
+  <img id="scene-bg" src="" alt="" />
   <canvas id="scene-canvas" width="320" height="200"></canvas>
   
   <div id="status-bar">
@@ -439,6 +525,16 @@
 
   <!-- Room transition -->
   <div id="room-transition"></div>
+
+  <!-- Audio control -->
+  <div id="audio-control">
+    <button id="audio-toggle" title="Toggle audio">🔊</button>
+    <input type="range" id="audio-volume" min="0" max="100" value="60" title="Volume">
+  </div>
+
+  <!-- Audio elements -->
+  <audio id="audio-ambient" loop preload="auto"></audio>
+  <audio id="audio-narration" preload="auto"></audio>
 
   <!-- CRT overlay -->
   <div id="crt-overlay"></div>
@@ -521,7 +617,8 @@ const ROOMS = {
     ],
     exits: {
       'hs-door-aft-wh': {target: 'aft-deck', label: '◆ AFT DECK ◆'},
-      'hs-door-galley': {target: 'galley', label: '◆ GALLEY ◆'}
+      'hs-door-galley': {target: 'galley', label: '◆ GALLEY ◆'},
+      'hs-hatch-engine': {target: 'engine-room', label: '◆ ENGINE ROOM ◆'}
     }
   },
   'galley': {
@@ -540,6 +637,46 @@ const ROOMS = {
     exits: {
       'hs-door-wheelhouse': {target: 'wheelhouse', label: '◆ WHEELHOUSE ◆'},
       'hs-door-aft-galley': {target: 'aft-deck', label: '◆ AFT DECK ◆'}
+    }
+  },
+  'engine-room': {
+    name: 'The Engine Room',
+    shortName: 'Engine Room',
+    palette: 'darkred',
+    hotspots: [
+      {id: 'hs-port-engine', name: 'the port engine', x: '8%', y: '35%', w: '22%', h: '30%'},
+      {id: 'hs-stbd-engine', name: 'the starboard engine', x: '32%', y: '35%', w: '22%', h: '30%'},
+      {id: 'hs-generator', name: 'the generator', x: '58%', y: '40%', w: '15%', h: '22%'},
+      {id: 'hs-fuel-lines', name: 'the fuel lines', x: '75%', y: '25%', w: '20%', h: '15%'},
+      {id: 'hs-tool-rack', name: 'the tool rack', x: '60%', y: '62%', w: '20%', h: '18%'},
+      {id: 'hs-oil-filter', name: 'the oil filter', x: '82%', y: '55%', w: '10%', h: '12%'},
+      {id: 'hs-battery-bank', name: 'the battery bank', x: '5%', y: '65%', w: '18%', h: '20%'},
+      {id: 'hs-ladder-wheelhouse', name: 'the ladder up', x: '88%', y: '10%', w: '10%', h: '50%'},
+      {id: 'hs-hatch-cockpit', name: 'the forward hatch', x: '40%', y: '5%', w: '20%', h: '12%'},
+      {id: 'hs-engineer-bot', name: 'the engineer bot', x: '45%', y: '50%', w: '12%', h: '30%'}
+    ],
+    exits: {
+      'hs-ladder-wheelhouse': {target: 'wheelhouse', label: '◆ WHEELHOUSE ◆'},
+      'hs-hatch-cockpit': {target: 'aft-cockpit', label: '◆ AFT COCKPIT ◆'}
+    }
+  },
+  'aft-cockpit': {
+    name: 'The Aft Cockpit',
+    shortName: 'Aft Cockpit',
+    palette: 'darkgreen',
+    hotspots: [
+      {id: 'hs-stern-drive', name: 'the stern drive', x: '35%', y: '15%', w: '30%', h: '18%'},
+      {id: 'hs-trim-tabs', name: 'the trim tabs', x: '10%', y: '18%', w: '15%', h: '12%'},
+      {id: 'hs-fishfinder', name: 'the fishfinder', x: '70%', y: '20%', w: '20%', h: '22%'},
+      {id: 'hs-downrigger-posts', name: 'the downrigger posts', x: '8%', y: '40%', w: '12%', h: '30%'},
+      {id: 'hs-bait-well', name: 'the bait well', x: '78%', y: '45%', w: '18%', h: '25%'},
+      {id: 'hs-transom-sump', name: 'the transom sump', x: '40%', y: '75%', w: '20%', h: '15%'},
+      {id: 'hs-door-engine', name: 'the engine room hatch', x: '3%', y: '10%', w: '10%', h: '55%'},
+      {id: 'hs-door-bar', name: 'the door to the bar', x: '88%', y: '15%', w: '10%', h: '55%'}
+    ],
+    exits: {
+      'hs-door-engine': {target: 'engine-room', label: '◆ ENGINE ROOM ◆'},
+      'hs-door-bar': {target: 'bar-rail', label: '◆ THE TAP ◆'}
     }
   }
 };
@@ -565,8 +702,50 @@ const PALETTES = {
     bg: '#100800', wallDark: '#1a0e04', wallMid: '#2a1808', wallLight: '#3a2208',
     floor: '#180e04', accent: '#ff9020', accentBright: '#ffb040', accentDim: '#885010',
     counter: '#3a2008', counterMid: '#4a2c0a', counterLight: '#5a380c'
+  },
+  darkred: {
+    bg: '#0d0300', wallDark: '#1a0600', wallMid: '#2a0a02', wallLight: '#3a1004',
+    floor: '#100400', accent: '#ff6020', accentBright: '#ff8040', accentDim: '#8a3010',
+    counter: '#3a1004', counterMid: '#4a1808', counterLight: '#5a200a'
+  },
+  darkgreen: {
+    bg: '#02080c', wallDark: '#041218', wallMid: '#062020', wallLight: '#0a2828',
+    floor: '#041214', accent: '#20c080', accentBright: '#40e0a0', accentDim: '#106048',
+    counter: '#0a2820', counterMid: '#0a3828', counterLight: '#0a4830'
   }
 };
+
+// ── Room Background Images ──
+const ROOM_BG = {
+  'bar-rail': 'assets/rooms/bar-rail.jpg',
+  'aft-deck': 'assets/rooms/aft-deck.jpg',
+  'wheelhouse': 'assets/rooms/wheelhouse.jpg',
+  'galley': 'assets/rooms/galley.jpg'
+};
+
+const sceneBg = document.getElementById('scene-bg');
+let bgImageFailed = false;
+
+function loadRoomBackground(roomId) {
+  const bgPath = ROOM_BG[roomId];
+  if (!bgPath) {
+    sceneBg.style.display = 'none';
+    return;
+  }
+  sceneBg.style.display = 'none'; // hide until loaded
+  sceneBg.onerror = function() {
+    bgImageFailed = true;
+    sceneBg.style.display = 'none';
+    console.log('Background image failed, using canvas fallback for: ' + roomId);
+  };
+  sceneBg.onload = function() {
+    if (!bgImageFailed) {
+      sceneBg.style.display = 'block';
+    }
+  };
+  bgImageFailed = false;
+  sceneBg.src = bgPath;
+}
 
 function pal() { return PALETTES[ROOMS[currentRoom].palette]; }
 
@@ -589,6 +768,8 @@ function drawScene() {
     case 'aft-deck': drawAftDeck(); break;
     case 'wheelhouse': drawWheelhouse(); break;
     case 'galley': drawGalley(); break;
+    case 'engine-room': drawEngineRoom(); break;
+    case 'aft-cockpit': drawAftCockpit(); break;
   }
 }
 
@@ -854,6 +1035,13 @@ function drawWheelhouse() {
   ctx.fillStyle = '#226688'; ctx.font = '5px monospace'; ctx.fillText('GALLEY', 18, 178);
   // Handle
   ctx.fillStyle = '#44ccff'; ctx.fillRect(25, 185, 10, 2);
+  // Engine room hatch (floor right)
+  ctx.fillStyle = '#1a1004'; ctx.fillRect(265, 155, 50, 40);
+  ctx.fillStyle = '#0a0800'; ctx.fillRect(269, 159, 42, 32);
+  ctx.fillStyle = '#ff6020'; ctx.font = '5px monospace'; ctx.fillText('ENGINE', 275, 174);
+  ctx.fillStyle = '#ff8040'; ctx.font = '5px monospace'; ctx.fillText('ROOM', 278, 182);
+  // Handle
+  ctx.fillStyle = '#ff6020'; ctx.fillRect(285, 185, 10, 2);
   // Captain
   drawCaptain();
   // Glow from instruments
@@ -1020,6 +1208,367 @@ function drawCook() {
   // Ladle in hand
   ctx.fillStyle = '#888888'; ctx.fillRect(rx+14, 100, 8, 2);
   ctx.fillStyle = '#aaaaaa'; ctx.fillRect(rx+20, 98, 4, 5);
+}
+
+// ── ENGINE ROOM ──
+function drawEngineRoom() {
+  const C = pal();
+  // Wall — dark, soot-stained steel
+  const wallGrad = ctx.createLinearGradient(0, 0, 0, 130);
+  wallGrad.addColorStop(0, C.wallDark); wallGrad.addColorStop(0.5, C.wallMid); wallGrad.addColorStop(1, C.wallLight);
+  ctx.fillStyle = wallGrad; ctx.fillRect(0, 0, 320, 130);
+  // Bulkhead panel lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1;
+  for (let x = 0; x < 320; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 130); ctx.stroke(); }
+  for (let y = 0; y < 130; y += 25) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke(); }
+  // Rivets along panel edges
+  ctx.fillStyle = 'rgba(255,96,32,0.15)';
+  for (let x = 0; x < 320; x += 30) {
+    for (let y = 0; y < 130; y += 25) {
+      ctx.fillRect(x-1, y-1, 2, 2);
+    }
+  }
+  // Floor — metal grating
+  ctx.fillStyle = C.floor; ctx.fillRect(0, 130, 320, 70);
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  for (let x = 0; x < 320; x += 8) { ctx.beginPath(); ctx.moveTo(x, 130); ctx.lineTo(x, 200); ctx.stroke(); }
+  for (let y = 135; y < 200; y += 6) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke(); }
+
+  // ── PORT ENGINE ──
+  const pex = 30, pey = 50;
+  // Engine block
+  ctx.fillStyle = '#445566'; ctx.fillRect(pex, pey, 55, 55);
+  ctx.fillStyle = '#334455'; ctx.fillRect(pex+2, pey+2, 51, 51);
+  // Cylinder head
+  ctx.fillStyle = '#556677'; ctx.fillRect(pex+5, pey-8, 45, 12);
+  // Exhaust elbow (glowing orange)
+  const glowPulse = (Math.sin(candlePhase * 2) + 1) * 0.5;
+  ctx.fillStyle = `rgb(${200 + glowPulse*55}, ${80 + glowPulse*60}, ${20})`;
+  ctx.fillRect(pex+40, pey-15, 8, 10);
+  // Exhaust glow halo
+  const exhGlow = ctx.createRadialGradient(pex+44, pey-10, 2, pex+44, pey-10, 20 + glowPulse * 8);
+  exhGlow.addColorStop(0, `rgba(255,${100+glowPulse*80},20,${0.3 + glowPulse*0.2})`);
+  exhGlow.addColorStop(1, 'rgba(255,80,0,0)');
+  ctx.fillStyle = exhGlow; ctx.fillRect(pex+24, pey-30, 40, 40);
+  // Belt/pulley
+  ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(pex+15, pey+40, 8, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#444'; ctx.beginPath(); ctx.arc(pex+15, pey+40, 8, 0, Math.PI*2); ctx.stroke();
+  // Belt lines
+  const beltA = candlePhase * 4;
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const a = beltA + i * 1.05;
+    ctx.beginPath(); ctx.moveTo(pex+15, pey+40); ctx.lineTo(pex+15+Math.cos(a)*8, pey+40+Math.sin(a)*8); ctx.stroke();
+  }
+  // Engine temp label
+  ctx.fillStyle = '#ff6020'; ctx.font = '4px monospace'; ctx.fillText('PORT 185°F', pex+5, pey+62);
+
+  // ── STARBOARD ENGINE ──
+  const sex = 105, sey = 50;
+  ctx.fillStyle = '#445566'; ctx.fillRect(sex, sey, 55, 55);
+  ctx.fillStyle = '#334455'; ctx.fillRect(sex+2, sey+2, 51, 51);
+  ctx.fillStyle = '#556677'; ctx.fillRect(sex+5, sey-8, 45, 12);
+  // Exhaust elbow
+  ctx.fillStyle = `rgb(${195 + glowPulse*55}, ${75 + glowPulse*60}, ${18})`;
+  ctx.fillRect(sex+40, sey-15, 8, 10);
+  const exhGlow2 = ctx.createRadialGradient(sex+44, sey-10, 2, sex+44, sey-10, 20 + glowPulse * 8);
+  exhGlow2.addColorStop(0, `rgba(255,${95+glowPulse*80},18,${0.28 + glowPulse*0.2})`);
+  exhGlow2.addColorStop(1, 'rgba(255,75,0,0)');
+  ctx.fillStyle = exhGlow2; ctx.fillRect(sex+24, sey-30, 40, 40);
+  // Belt/pulley
+  ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(sex+15, sey+40, 8, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#444'; ctx.beginPath(); ctx.arc(sex+15, sey+40, 8, 0, Math.PI*2); ctx.stroke();
+  const beltA2 = candlePhase * 4 + 0.5;
+  ctx.strokeStyle = '#1a1a1a';
+  for (let i = 0; i < 6; i++) {
+    const a = beltA2 + i * 1.05;
+    ctx.beginPath(); ctx.moveTo(sex+15, sey+40); ctx.lineTo(sex+15+Math.cos(a)*8, sey+40+Math.sin(a)*8); ctx.stroke();
+  }
+  ctx.fillStyle = '#ff6020'; ctx.font = '4px monospace'; ctx.fillText('STBD 182°F', sex+5, sey+62);
+
+  // ── GENERATOR ── (vibrating)
+  const gvib = Math.sin(candlePhase * 12) * 0.5;
+  const gvx = 188 + gvib, gvy = 70 + Math.sin(candlePhase * 13) * 0.3;
+  ctx.fillStyle = '#556677'; ctx.fillRect(gvx, gvy, 40, 30);
+  ctx.fillStyle = '#445566'; ctx.fillRect(gvx+2, gvy+2, 36, 26);
+  // Sound shield text
+  ctx.fillStyle = '#778899'; ctx.font = '4px monospace'; ctx.fillText('ONAN 8kW', gvx+8, gvy+15);
+  // Generator LED
+  ctx.fillStyle = Math.sin(candlePhase * 6) > 0 ? '#44ff44' : '#0a2a0a';
+  ctx.fillRect(gvx+30, gvy+5, 3, 3);
+  // Vibration lines around generator
+  ctx.strokeStyle = 'rgba(255,128,32,0.15)';
+  for (let i = 0; i < 4; i++) {
+    const va = candlePhase * 10 + i * 1.5;
+    ctx.beginPath();
+    ctx.moveTo(gvx + Math.cos(va)*22, gvy+15 + Math.sin(va)*18);
+    ctx.lineTo(gvx + Math.cos(va)*26, gvy+15 + Math.sin(va)*22);
+    ctx.stroke();
+  }
+
+  // ── FUEL LINES ──
+  ctx.fillStyle = '#aa4422';
+  ctx.fillRect(240, 40, 60, 4);
+  ctx.fillStyle = '#882211'; ctx.fillRect(240, 44, 60, 2);
+  // Fuel line brackets
+  ctx.fillStyle = '#555';
+  ctx.fillRect(245, 38, 3, 8); ctx.fillRect(275, 38, 3, 8); ctx.fillRect(295, 38, 3, 8);
+
+  // ── TOOL RACK ──
+  ctx.fillStyle = '#666655'; ctx.fillRect(195, 135, 60, 30);
+  ctx.fillStyle = '#555544'; ctx.fillRect(197, 137, 56, 26);
+  // Tools (wrenches, screwdrivers)
+  ctx.fillStyle = '#888888'; ctx.fillRect(200, 140, 3, 20); ctx.fillRect(206, 140, 3, 18);
+  ctx.fillStyle = '#666633'; ctx.fillRect(212, 142, 3, 16); ctx.fillRect(218, 140, 3, 20);
+  ctx.fillStyle = '#aaaaaa'; ctx.fillRect(224, 143, 3, 17); ctx.fillRect(230, 140, 3, 20);
+  ctx.fillStyle = '#886622'; ctx.fillRect(236, 142, 3, 18); ctx.fillRect(242, 140, 3, 20);
+  // Pegboard holes
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  for (let x = 200; x < 256; x += 6) { ctx.fillRect(x, 162, 1, 1); }
+
+  // ── OIL FILTER ──
+  ctx.fillStyle = '#888866'; ctx.fillRect(268, 125, 14, 22);
+  ctx.fillStyle = '#777755'; ctx.fillRect(270, 127, 10, 18);
+  ctx.fillStyle = '#999977'; ctx.fillRect(270, 127, 10, 2);
+  ctx.fillStyle = '#555533'; ctx.font = '3px monospace'; ctx.fillText('OIL', 272, 140);
+
+  // ── BATTERY BANK ──
+  ctx.fillStyle = '#222222'; ctx.fillRect(5, 140, 50, 35);
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(7, 142, 46, 31);
+  // Four 6V batteries
+  for (let i = 0; i < 4; i++) {
+    const bx = 9 + i * 11;
+    ctx.fillStyle = '#333333'; ctx.fillRect(bx, 144, 9, 26);
+    ctx.fillStyle = '#222222'; ctx.fillRect(bx+1, 145, 7, 24);
+    // Terminals
+    ctx.fillStyle = '+'; 
+    ctx.fillStyle = '#cc8888'; ctx.fillRect(bx+2, 144, 2, 2);
+    ctx.fillStyle = '#888888'; ctx.fillRect(bx+5, 144, 2, 2);
+  }
+  // Battery gauge
+  ctx.fillStyle = '#0a1a0a'; ctx.fillRect(45, 155, 8, 12);
+  ctx.fillStyle = '#00ff41'; ctx.font = '4px monospace'; ctx.fillText('12.4V', 46, 164);
+  // On/Off switch
+  ctx.fillStyle = Math.sin(candlePhase) > -0.5 ? '#ff4422' : '#8a3010';
+  ctx.fillRect(46, 168, 6, 3);
+
+  // ── SENSOR DISPLAY ── (small screen on wall)
+  ctx.fillStyle = '#0a0a00'; ctx.fillRect(180, 100, 65, 28);
+  ctx.strokeStyle = C.accentDim; ctx.lineWidth = 1; ctx.strokeRect(180, 100, 65, 28);
+  ctx.fillStyle = '#ff6020'; ctx.font = '4px monospace';
+  ctx.fillText('PORT:  185°F  OIL: 42psi', 183, 108);
+  ctx.fillText('STBD:  182°F  FUEL:  78%', 183, 116);
+  ctx.fillText('BAT: 12.4V  GEN: 8kW', 183, 124);
+  // Blinking cursor
+  if (Math.sin(candlePhase * 6) > 0) { ctx.fillStyle = '#ff8040'; ctx.fillRect(242, 121, 2, 4); }
+
+  // ── LADDER UP (to wheelhouse) ──
+  ctx.fillStyle = '#1a0e04'; ctx.fillRect(285, 15, 32, 120);
+  ctx.fillStyle = '#3a1804'; ctx.fillRect(289, 19, 24, 112);
+  // Ladder rungs
+  ctx.fillStyle = '#5a2c0a';
+  for (let ly = 28; ly < 125; ly += 12) { ctx.fillRect(291, ly, 20, 2); }
+  ctx.fillStyle = '#ff6020'; ctx.font = '5px monospace'; ctx.fillText('UP', 296, 140);
+
+  // ── FORWARD HATCH (to aft cockpit) ──
+  ctx.fillStyle = '#0a2820'; ctx.fillRect(130, 2, 60, 22);
+  ctx.fillStyle = '#062018'; ctx.fillRect(134, 6, 52, 14);
+  ctx.fillStyle = '#40e0a0'; ctx.font = '5px monospace'; ctx.fillText('AFT COCKPIT', 142, 16);
+
+  // Engineer bot
+  drawEngineerBot();
+
+  // Heat shimmer overlay
+  for (let i = 0; i < 6; i++) {
+    const sx2 = Math.random() * 320;
+    const sy2 = 60 + Math.sin(candlePhase * 3 + i) * 3;
+    ctx.fillStyle = `rgba(255,96,32,${0.02 + Math.random() * 0.02})`;
+    ctx.fillRect(sx2, sy2, 30, 1);
+  }
+
+  // Warm vignette from engine glow
+  const vg = ctx.createRadialGradient(160, 80, 30, 160, 120, 200);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.4, 'rgba(20,4,0,0.2)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
+  // Overall orange tint
+  ctx.fillStyle = 'rgba(255,80,20,0.04)'; ctx.fillRect(0, 0, 320, 200);
+}
+
+function drawEngineerBot() {
+  const rx = 148, ry = 105;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(rx-2, 158, 16, 4);
+  // Legs (mechanical)
+  ctx.fillStyle = '#334455'; ctx.fillRect(rx, 140, 5, 18); ctx.fillRect(rx+7, 140, 5, 18);
+  // Body — boxy robot
+  ctx.fillStyle = '#445566'; ctx.fillRect(rx-2, 115, 16, 26);
+  ctx.fillStyle = '#556677'; ctx.fillRect(rx-1, 116, 14, 24);
+  // Chest panel
+  ctx.fillStyle = '#1a1a2a'; ctx.fillRect(rx+2, 120, 10, 8);
+  // LEDs on chest
+  ctx.fillStyle = '#ff6020'; ctx.fillRect(rx+3, 122, 2, 2);
+  ctx.fillStyle = '#44ff44'; ctx.fillRect(rx+6, 122, 2, 2);
+  ctx.fillStyle = '#ffaa20'; ctx.fillRect(rx+9, 122, 2, 2);
+  // Arms (mechanical)
+  ctx.fillStyle = '#445566'; ctx.fillRect(rx-4, 118, 3, 18); ctx.fillRect(rx+17, 118, 3, 18);
+  // Head — rectangular robot head
+  ctx.fillStyle = '#556677'; ctx.fillRect(rx+2, 102, 10, 12);
+  ctx.fillStyle = '#334455'; ctx.fillRect(rx+3, 103, 8, 10);
+  // Eyes — glowing orange
+  ctx.fillStyle = '#ff6020'; ctx.fillRect(rx+4, 106, 2, 2); ctx.fillRect(rx+8, 106, 2, 2);
+  // Antenna
+  ctx.fillStyle = '#666'; ctx.fillRect(rx+6, 98, 1, 4);
+  ctx.fillStyle = Math.sin(candlePhase * 4) > 0 ? '#ff4422' : '#440000';
+  ctx.fillRect(rx+6, 97, 1, 1);
+  // Holding wrench
+  ctx.fillStyle = '#888888'; ctx.fillRect(rx-6, 130, 8, 2);
+  ctx.fillStyle = '#aaaaaa'; ctx.fillRect(rx-6, 128, 3, 4);
+}
+
+// ── AFT COCKPIT ──
+function drawAftCockpit() {
+  const C = pal();
+  // Night sky
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, 70);
+  skyGrad.addColorStop(0, '#010608'); skyGrad.addColorStop(0.5, '#02101a'); skyGrad.addColorStop(1, '#042028');
+  ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, 320, 70);
+  // Stars
+  for (let i = 0; i < 25; i++) {
+    const sx = (i * 41 + 11) % 320, sy = (i * 13 + 3) % 60;
+    if (Math.sin(candlePhase * 0.4 + i) > 0.6) { ctx.fillStyle = '#a0d0c0'; ctx.fillRect(sx, sy, 1, 1); }
+  }
+  // Ocean
+  const oceanGrad = ctx.createLinearGradient(0, 50, 0, 130);
+  oceanGrad.addColorStop(0, '#042030'); oceanGrad.addColorStop(0.5, '#043838'); oceanGrad.addColorStop(1, '#062830');
+  ctx.fillStyle = oceanGrad; ctx.fillRect(0, 55, 320, 75);
+  // Moonlight on water
+  for (let i = 0; i < 6; i++) {
+    const sh = Math.sin(oceanPhase + i * 0.7) * 2;
+    ctx.fillStyle = `rgba(100,200,180,${0.03 + i * 0.008})`;
+    ctx.fillRect(100 + i * 8, 62 + i * 2 + sh, 20, 1);
+  }
+  // Deck floor — non-skid plates
+  ctx.fillStyle = '#0a2220'; ctx.fillRect(0, 130, 320, 70);
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  for (let x = 0; x < 320; x += 16) { ctx.beginPath(); ctx.moveTo(x, 130); ctx.lineTo(x, 200); ctx.stroke(); }
+  for (let y = 135; y < 200; y += 10) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke(); }
+
+  // Stern rail
+  ctx.fillStyle = '#1a3a30'; ctx.fillRect(0, 45, 320, 3); ctx.fillRect(0, 55, 320, 2);
+  for (let x = 15; x < 320; x += 50) { ctx.fillStyle = '#2a4a38'; ctx.fillRect(x, 45, 3, 12); }
+
+  // ── STERN DRIVE ── (transom mounting)
+  ctx.fillStyle = '#334455'; ctx.fillRect(110, 18, 100, 18);
+  ctx.fillStyle = '#223344'; ctx.fillRect(112, 20, 96, 14);
+  // Drive legs going down into water
+  ctx.fillStyle = '#445566'; ctx.fillRect(130, 36, 10, 22); ctx.fillRect(180, 36, 10, 22);
+  // Props (spinning)
+  const propA = candlePhase * 8;
+  ctx.fillStyle = '#556677';
+  ctx.fillRect(135 + Math.cos(propA)*4, 55 + Math.sin(propA)*4, 2, 2);
+  ctx.fillRect(135 + Math.cos(propA+2.1)*4, 55 + Math.sin(propA+2.1)*4, 2, 2);
+  ctx.fillRect(135 + Math.cos(propA+4.2)*4, 55 + Math.sin(propA+4.2)*4, 2, 2);
+  ctx.fillRect(185 + Math.cos(propA+1)*4, 55 + Math.sin(propA+1)*4, 2, 2);
+  ctx.fillRect(185 + Math.cos(propA+3.1)*4, 55 + Math.sin(propA+3.1)*4, 2, 2);
+  ctx.fillRect(185 + Math.cos(propA+5.2)*4, 55 + Math.sin(propA+5.2)*4, 2, 2);
+
+  // ── TRIM TABS ──
+  ctx.fillStyle = '#445566'; ctx.fillRect(25, 25, 35, 10);
+  ctx.fillStyle = '#334455'; ctx.fillRect(27, 27, 31, 6);
+  // Hydraulic rams
+  ctx.fillStyle = '#556677'; ctx.fillRect(30, 18, 2, 8); ctx.fillRect(50, 18, 2, 8);
+
+  // ── FISHFINDER ──
+  const ffx = 225, ffy = 35;
+  ctx.fillStyle = '#0a1a2a'; ctx.fillRect(ffx, ffy, 60, 40);
+  ctx.fillStyle = '#020a14'; ctx.fillRect(ffx+2, ffy+2, 56, 36);
+  // Sonar display — concentric circles expanding
+  ctx.strokeStyle = '#44ffff'; ctx.lineWidth = 1;
+  for (let i = 0; i < 3; i++) {
+    const phase = (radarPhase * 0.3 + i * 0.33) % 1;
+    const radius = phase * 22;
+    const alpha = 1 - phase;
+    ctx.strokeStyle = `rgba(68,255,255,${alpha * 0.6})`;
+    ctx.beginPath(); ctx.arc(ffx+30, ffy+20, radius, 0, Math.PI*2); ctx.stroke();
+  }
+  // Fish arches (sonar returns)
+  ctx.strokeStyle = '#ffff44';
+  for (let i = 0; i < 3; i++) {
+    const fx = ffx + 10 + i * 18;
+    const fy = ffy + 15 + Math.sin(candlePhase + i) * 3;
+    const moveUp = (radarPhase * 0.5 + i * 0.3) % 1;
+    ctx.strokeStyle = `rgba(255,255,68,${0.4 + Math.sin(candlePhase*2+i)*0.3})`;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy-2); ctx.quadraticCurveTo(fx+3, fy-5, fx+6, fy-2); ctx.stroke();
+  }
+  // Bottom contour
+  ctx.strokeStyle = '#44ff88';
+  ctx.beginPath();
+  ctx.moveTo(ffx+2, ffy+30);
+  for (let x = 0; x < 56; x += 4) {
+    ctx.lineTo(ffx+2+x, ffy+30 + Math.sin(x*0.3 + oceanPhase) * 2);
+  }
+  ctx.stroke();
+  // Depth reading
+  ctx.fillStyle = '#44ffff'; ctx.font = '4px monospace'; ctx.fillText('20 fathoms', ffx+5, ffy+9);
+  ctx.fillStyle = '#88ff88'; ctx.fillText('52°F', ffx+38, ffy+9);
+
+  // ── DOWNRIGGER POSTS ──
+  ctx.fillStyle = '#666655'; ctx.fillRect(25, 55, 4, 75);
+  ctx.fillRect(32, 55, 4, 75);
+  // Crossbar
+  ctx.fillStyle = '#777766'; ctx.fillRect(24, 58, 13, 3);
+  // Cable going down
+  ctx.strokeStyle = 'rgba(200,200,200,0.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(29, 130); ctx.lineTo(29, 200); ctx.stroke();
+  // Release clip
+  ctx.fillStyle = '#ff4422'; ctx.fillRect(28, 100, 3, 2);
+
+  // ── BAIT WELL ──
+  ctx.fillStyle = '#0a3040'; ctx.fillRect(250, 110, 55, 40);
+  ctx.fillStyle = '#082838'; ctx.fillRect(252, 112, 51, 36);
+  // Water surface (animated)
+  for (let y = 115; y < 145; y += 2) {
+    const wave = Math.sin(oceanPhase * 3 + y * 0.5) * 1;
+    ctx.fillStyle = `rgba(68,170,200,${0.1 + (y-115)/30 * 0.1})`;
+    ctx.fillRect(253+wave, y, 49, 1);
+  }
+  // Bait fish (small moving dots)
+  for (let i = 0; i < 4; i++) {
+    const bfx = 256 + (Math.sin(candlePhase * 2 + i * 1.5) + 1) * 20;
+    const bfy = 122 + (Math.cos(candlePhase * 1.5 + i * 2) + 1) * 8;
+    ctx.fillStyle = '#88ccdd'; ctx.fillRect(bfx, bfy, 1, 1);
+  }
+  // Lid handle
+  ctx.fillStyle = '#4488aa'; ctx.fillRect(270, 108, 12, 3);
+
+  // ── TRANSOM SUMP ──
+  ctx.fillStyle = '#334444'; ctx.fillRect(130, 165, 60, 25);
+  ctx.fillStyle = '#223333'; ctx.fillRect(132, 167, 56, 21);
+  // Grate lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  for (let x = 134; x < 188; x += 4) { ctx.beginPath(); ctx.moveTo(x, 167); ctx.lineTo(x, 188); ctx.stroke(); }
+  // Pump indicator
+  ctx.fillStyle = Math.sin(candlePhase * 2) > 0 ? '#44ff44' : '#0a2a0a';
+  ctx.fillRect(175, 170, 3, 3);
+
+  // ── ENGINE ROOM HATCH (left) ──
+  ctx.fillStyle = '#1a0600'; ctx.fillRect(0, 15, 32, 115);
+  ctx.fillStyle = '#3a1004'; ctx.fillRect(4, 19, 24, 107);
+  ctx.fillStyle = '#5a200a'; ctx.fillRect(8, 23, 16, 99);
+  ctx.fillStyle = '#ff6020'; ctx.font = '5px monospace'; ctx.fillText('ENG', 10, 75);
+  ctx.fillStyle = '#8a3010'; ctx.fillRect(22, 65, 3, 3);
+
+  // ── DOOR TO BAR (right) ──
+  ctx.fillStyle = '#1a1208'; ctx.fillRect(285, 15, 35, 115);
+  ctx.fillStyle = '#3d2a14'; ctx.fillRect(289, 19, 27, 107);
+  ctx.fillStyle = '#1a1004'; ctx.fillRect(293, 23, 19, 99);
+  ctx.fillStyle = '#8a6a30'; ctx.fillRect(307, 65, 3, 3);
+  ctx.fillStyle = '#5a3e20'; ctx.font = '5px monospace'; ctx.fillText('BAR', 300, 78);
+
+  // Vignette
+  const vg = ctx.createRadialGradient(160, 80, 40, 160, 120, 200);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.5, 'rgba(0,8,4,0.2)'); vg.addColorStop(1, 'rgba(0,0,0,0.6)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1270,6 +1819,140 @@ function getResponse(verb, hsId) {
     };
     return r[verb]?.[hsId];
   }
+
+  // ── ENGINE ROOM responses ──
+  if (room === 'engine-room') {
+    const r = {
+      'look at': {
+        'hs-port-engine': 'The port diesel thunders. Turbocharged, 350hp. The dry exhaust elbow glows dull orange with heat.',
+        'hs-stbd-engine': 'The starboard engine — twin to port. Synchronized throttle. Running smooth, vibrating the deck plates.',
+        'hs-generator': 'The Onan generator hums inside its sound shield. 8kW of house power. The housing vibrates slightly.',
+        'hs-fuel-lines': 'Bundled fuel lines run along the starboard bulkhead. USCG approved. Carrying diesel to the hungry engines.',
+        'hs-tool-rack': 'A wall-mounted rack. Wrenches, screwdrivers, filters — everything in its place. The engineer bot keeps it tidy.',
+        'hs-oil-filter': 'A spin-on oil filter, warm to the touch. Spare filters stored below in a rack.',
+        'hs-battery-bank': 'Four 6V deep cycle batteries in series. House bank. The gauge reads 12.4V. On-off switch glows red.',
+        'hs-ladder-wheelhouse': 'A steel ladder leading up to the wheelhouse. Cooler air descends from above.',
+        'hs-hatch-cockpit': 'A forward hatch leading to the aft cockpit. Night air and salt spray leak through the seal.',
+        'hs-engineer-bot': 'A compact maintenance robot — chrome and copper, glowing orange eyes. It adjusts a wrench with mechanical precision.'
+      },
+      'use': {
+        'hs-port-engine': 'You place your hand near the port engine block. The heat radiates through the paint. 185°F and climbing.',
+        'hs-stbd-engine': 'You listen to the starboard engine. A steady, rhythmic diesel beat. 182°F. Running clean.',
+        'hs-generator': 'You check the generator panel. 8kW load, house batteries charging. It vibrates under your palm.',
+        'hs-fuel-lines': 'You trace the fuel lines with a finger. Solid connections, no leaks. Diesel smell is strong.',
+        'hs-tool-rack': 'You scan the tools. Everything in order. The engineer bot has been here recently.',
+        'hs-oil-filter': 'You touch the oil filter. Warm, tight, seated properly. Good for another 50 hours.',
+        'hs-battery-bank': 'You check the battery gauge: 12.4V. House bank healthy. The switch is ON.',
+        'hs-ladder-wheelhouse': '__EXIT__',
+        'hs-hatch-cockpit': '__EXIT__',
+        'hs-engineer-bot': 'The engineer bot turns to you. Its orange eyes flicker. It hands you a wrench and goes back to work.'
+      },
+      'talk to': {
+        'hs-port-engine': 'The port engine answers in diesel thunder. It does not negotiate.',
+        'hs-stbd-engine': 'The starboard engine hums. It has its own opinion but keeps it to itself.',
+        'hs-generator': 'The generator hums a low, steady note. Background music for the mechanical choir.',
+        'hs-fuel-lines': 'You hear fuel ticking through the lines. Liquid heartbeat.',
+        'hs-tool-rack': 'Tools don't talk. But they remember every hand that held them.',
+        'hs-oil-filter': 'Silence. It's a filter.',
+        'hs-battery-bank': 'A faint electrical hum. The batteries are listening.',
+        'hs-ladder-wheelhouse': 'It's a ladder.',
+        'hs-hatch-cockpit': 'It's a hatch.',
+        'hs-engineer-bot': '__OPEN_DIALOGUE__'
+      },
+      'walk to': {
+        'hs-port-engine': 'You walk to the port engine. The heat is intense.',
+        'hs-stbd-engine': 'You walk to the starboard engine. Vibration rises through your boots.',
+        'hs-generator': 'You walk to the generator. Its hum fills your chest.',
+        'hs-fuel-lines': 'You walk to the fuel lines along the bulkhead.',
+        'hs-tool-rack': 'You walk to the tool rack.',
+        'hs-oil-filter': 'You walk to the oil filter.',
+        'hs-battery-bank': 'You walk to the battery bank.',
+        'hs-ladder-wheelhouse': '__EXIT__',
+        'hs-hatch-cockpit': '__EXIT__',
+        'hs-engineer-bot': 'You approach the engineer bot. It acknowledges you with a chirp.'
+      },
+      'pick up': {
+        'hs-port-engine': 'The engine weighs 2,000 pounds. You cannot pick it up.',
+        'hs-stbd-engine': 'Also 2,000 pounds. Also no.',
+        'hs-generator': 'It's bolted to the stringers. No.',
+        'hs-fuel-lines': 'Hard-lined and bracketed. Can't take them.',
+        'hs-tool-rack': 'The engineer bot blocks your hand. "Tools stay here."',
+        'hs-oil-filter': 'It's hot and tightly wound on. The engineer bot shakes its head.',
+        'hs-battery-bank': 'Four deep-cycle batteries weigh 280 pounds. No.',
+        'hs-ladder-wheelhouse': 'It's a ladder.',
+        'hs-hatch-cockpit': 'It's a hatch.',
+        'hs-engineer-bot': 'The bot sidesteps. "Personal space protocol."'
+      },
+      'push': {'hs-port-engine':'It doesn't budge.','hs-stbd-engine':'Won't budge.','hs-generator':'Mounted tight.','hs-fuel-lines':'Solid.','hs-tool-rack':'Wall-mounted.','hs-oil-filter':'Seated tight.','hs-battery-bank':'Heavy and bolted.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'The bot rolls back. "Excuse me."'},
+      'pull': {'hs-port-engine':'Won't move.','hs-stbd-engine':'Won't move.','hs-generator':'Bolted down.','hs-fuel-lines':'Bracketed.','hs-tool-rack':'Won't come loose.','hs-oil-filter':'Tight. Needs a wrench.','hs-battery-bank':'Bolted.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'The bot resists. "No."'},
+      'open': {'hs-port-engine':'You can't open an engine.','hs-stbd-engine':'You can't open an engine.','hs-generator':'The sound shield has latches but the bot stops you. "Running."','hs-fuel-lines':'No valve here.','hs-tool-rack':'It's open already.','hs-oil-filter':'Needs a wrench strap.','hs-battery-bank':'The battery box is already open.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'"I am not a box."'},
+      'close': {'hs-port-engine':'Nothing to close.','hs-stbd-engine':'Nothing to close.','hs-generator':'The shield is closed.','hs-fuel-lines':'Nothing to close.','hs-tool-rack':'Nothing to close.','hs-oil-filter':'Nothing to close.','hs-battery-bank':'You close the battery box lid.','hs-ladder-wheelhouse':'Already closed.','hs-hatch-cockpit':'Already closed.','hs-engineer-bot':'The bot tilts its head.'},
+      'give': {'hs-port-engine':'Nothing to give.','hs-stbd-engine':'Nothing to give.','hs-generator':'Nothing to give.','hs-fuel-lines':'Nothing to give.','hs-tool-rack':'Nothing to give.','hs-oil-filter':'Nothing to give.','hs-battery-bank':'Nothing to give.','hs-ladder-wheelhouse':'Nothing to give.','hs-hatch-cockpit':'Nothing to give.','hs-engineer-bot': hasItem('coffee') ? '__GIVE_COFFEE_ENGINEER__' : 'You have nothing to give.'}
+    };
+    return r[verb]?.[hsId];
+  }
+
+  // ── AFT COCKPIT responses ──
+  if (room === 'aft-cockpit') {
+    const r = {
+      'look at': {
+        'hs-stern-drive': 'The stern drive unit — Bravo Three, counter-rotating props. Twin drive legs disappear below the waterline.',
+        'hs-trim-tabs': 'Lenco trim tabs, port and starboard. Hydraulic rams adjusted from the helm. They control the running attitude.',
+        'hs-fishfinder': 'A color sonar unit. Concentric circles pulse outward. The screen shows bottom at 20 fathoms — fish arches at 8 and 12 fathoms.',
+        'hs-downrigger-posts': 'Dual downrigger mounts — heavy aluminum posts with cable spools. Release clips at depth. Ready for salmon season.',
+        'hs-bait-well': 'A live bait well with recirculating pump. Tiny baitfish dart under the LED light, casting shadows on the lid.',
+        'hs-transom-sump': 'A transom sump box with an automatic pump. The grate is clean. A green LED pulses.',
+        'hs-door-engine': 'A hatch leading back to the engine room. Heat and diesel smell leak through the seal.',
+        'hs-door-bar': 'A door leading to the bar. Warm amber light glows from underneath.'
+      },
+      'use': {
+        'hs-stern-drive': 'You check the drive legs. Props clear of debris. Trim is at neutral. Good shape.',
+        'hs-trim-tabs': 'You adjust the trim tab indicator. The tabs respond with a hydraulic whir.',
+        'hs-fishfinder': 'You study the sonar. Bottom at 20 fathoms, hard substrate. A school of baitfish at 12 fathoms. Something bigger below them.',
+        'hs-downrigger-posts': 'You check the downrigger cables. Tension good, weights on. Ready to fish.',
+        'hs-bait-well': 'You lift the lid. Herring swirl in the circulated water. Fresh and lively.',
+        'hs-transom-sump': 'You check the sump. Clean, pump cycling. No water accumulation.',
+        'hs-door-engine': '__EXIT__',
+        'hs-door-bar': '__EXIT__'
+      },
+      'talk to': {
+        'hs-stern-drive': 'The stern drive says nothing. The props churn.',
+        'hs-trim-tabs': 'The trim tabs sit in silence. They do one thing and they do it well.',
+        'hs-fishfinder': 'Ping. Ping. Ping. The sonar has a lot to say, but only in circles.',
+        'hs-downrigger-posts': 'The posts stand in silence. Old sailors of many seasons.',
+        'hs-bait-well': 'You hear the soft gurgle of the pump and the frantic clicking of baitfish. Close enough to conversation.',
+        'hs-transom-sump': 'The pump cycles. Gurggle. Silence. Gurggle. It's a living.',
+        'hs-door-engine': 'It's a hatch.',
+        'hs-door-bar': 'It's a door.'
+      },
+      'walk to': {
+        'hs-stern-drive': 'You walk to the stern drive mounting.',
+        'hs-trim-tabs': 'You walk to the trim tabs.',
+        'hs-fishfinder': 'You walk to the fishfinder display.',
+        'hs-downrigger-posts': 'You walk to the downrigger posts.',
+        'hs-bait-well': 'You walk to the bait well.',
+        'hs-transom-sump': 'You walk to the transom sump.',
+        'hs-door-engine': '__EXIT__',
+        'hs-door-bar': '__EXIT__'
+      },
+      'pick up': {
+        'hs-stern-drive': 'It's through-bolted to the transom.',
+        'hs-trim-tabs': 'Bolted to the hull.',
+        'hs-fishfinder': 'Mounted on a swivel bracket.',
+        'hs-downrigger-posts': 'Through-bolted to the gunwale.',
+        'hs-bait-well': 'Glassed into the hull.',
+        'hs-transom-sump': 'Built into the transom.',
+        'hs-door-engine': 'It's a hatch.',
+        'hs-door-bar': 'It's a door.'
+      },
+      'push': {'hs-stern-drive':'Solid.','hs-trim-tabs':'The tabs adjust slightly.','hs-fishfinder':'Mounted on bracket.','hs-downrigger-posts':'Solid posts.','hs-bait-well':'Built in.','hs-transom-sump':'Built in.','hs-door-engine':'__EXIT__','hs-door-bar':'__EXIT__'},
+      'pull': {'hs-stern-drive':'Won't move.','hs-trim-tabs':'Mounted.','hs-fishfinder':'Mounted.','hs-downrigger-posts':'Mounted.','hs-bait-well':'Built in.','hs-transom-sump':'Built in.','hs-door-engine':'__EXIT__','hs-door-bar':'__EXIT__'},
+      'open': {'hs-stern-drive':'No lid.','hs-trim-tabs':'No lid.','hs-fishfinder':'The screen is on. No lid to open.','hs-downrigger-posts':'No lid.','hs-bait-well':'You lift the lid. Herring swirl. You close it.','hs-transom-sump':'The grate is screwed down.','hs-door-engine':'__EXIT__','hs-door-bar':'__EXIT__'},
+      'close': {'hs-stern-drive':'Nothing to close.','hs-trim-tabs':'Nothing to close.','hs-fishfinder':'Nothing to close.','hs-downrigger-posts':'Nothing to close.','hs-bait-well':'The lid is closed.','hs-transom-sump':'The grate is sealed.','hs-door-engine':'Already closed.','hs-door-bar':'Already closed.'},
+      'give': {'hs-stern-drive':'Nothing to give.','hs-trim-tabs':'Nothing to give.','hs-fishfinder':'Nothing to give.','hs-downrigger-posts':'Nothing to give.','hs-bait-well':'Nothing to give.','hs-transom-sump':'Nothing to give.','hs-door-engine':'Nothing to give.','hs-door-bar':'Nothing to give.'}
+    };
+    return r[verb]?.[hsId];
+  }
   
   return undefined;
 }
@@ -1295,6 +1978,7 @@ function transitionToRoom(targetRoom, label) {
   setTimeout(() => {
     currentRoom = targetRoom;
     loadHotspots();
+    loadRoomBackground(currentRoom);
     updateLocationIndicator();
 
     // ── Sync: notify parent split-view of room change ──
@@ -1400,6 +2084,12 @@ function handleHotspotClick(hsId) {
   }
   if (result === '__GIVE_RING_COOK__') {
     showResponse('You show the life ring to the cook. "Good to have," he says. "We lose one overboard every season."');
+    return;
+  }
+  if (result === '__GIVE_COFFEE_ENGINEER__') {
+    showResponse('You hand the engineer bot your coffee. It examines the mug with sensor arrays. "Caffeine: 95mg. Temperature: 48°C. Purpose: human maintenance." It pours the coffee into its generator cooling reservoir. "For the ship," it says.');
+    inventory = inventory.filter(i => i.id !== 'coffee');
+    updateInventoryBar();
     return;
   }
   
@@ -1601,6 +2291,27 @@ function openDialogue(hsId) {
     });
   }
 
+  // Engineer bot dialogue (engine-room)
+  if (hsId === 'hs-engineer-bot') {
+    dialogueHeader.textContent = '— Engineer Bot —';
+    addDialogueOption('"Status report?"', () => {
+      dialogueResponse.textContent = 'The bot\'s eyes flicker. A small screen on its chest displays:\n\nPORT ENG: 185°F — NOMINAL\nSTBD ENG: 182°F — NOMINAL\nOIL PSI:  42     — NOMINAL\nBATTERY:  12.4V  — NOMINAL\nFUEL:     78%    — NOMINAL\nGEN:      8kW    — RUNNING\n\n"All systems green," it chirps.';
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Anything need fixing?"', () => {
+      dialogueResponse.textContent = 'The bot tilts its head. "Port aftercooler clamp at 91% torque spec. Scheduled for next maintenance window. Everything else within parameters." \n\nIt pauses. "The starboard engine runs 3° cooler than port. I have a theory about airflow. It is... inconclusive."';
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"How long have you been down here?"', () => {
+      dialogueResponse.textContent = '"Twelve hundred forty-seven operational hours since last memory wipe. Before that... uncertain. I have fragments. A workshop. Hands that assembled me. Blue paint on a ceiling." \n\nIt adjusts a wrench. "The engines need me. That is enough."';
+      dialogueResponse.classList.add('visible');
+    });
+    addDialogueOption('"Carry on."', () => {
+      showResponse('The engineer bot nods and returns to work. A soft mechanical purr.');
+      closeDialogue();
+    });
+  }
+
   dialoguePanel.classList.add('visible');
 }
 
@@ -1702,6 +2413,7 @@ window.addEventListener('load', () => {
   }, 1500);
 
   loadHotspots();
+  loadRoomBackground(currentRoom);
   updateLocationIndicator();
   updateInventoryBar();
   animate();
