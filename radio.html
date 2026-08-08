@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Radio Room — 2182 kHz</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  #radio-container {
+    position: relative;
+    width: 100vw;
+    max-width: 960px;
+    aspect-ratio: 320/200;
+    background: #050308;
+    overflow: hidden;
+    image-rendering: pixelated;
+  }
+
+  #radio-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    z-index: 1;
+  }
+
+  /* CRT scanlines */
+  #crt-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    background: repeating-linear-gradient(
+      0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px
+    );
+  }
+
+  /* Status bar */
+  #status-bar {
+    position: absolute;
+    top: 0; left: 0; width: 100%;
+    padding: 4px 8px;
+    background: rgba(5,3,8,0.85);
+    border-bottom: 1px solid #2a4a30;
+    color: #44dd44;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 50;
+    pointer-events: none;
+    letter-spacing: 1px;
+  }
+
+  /* Frequency Dial */
+  #dial-panel {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    background: rgba(5,3,8,0.9);
+    border: 1px solid #2a4a30;
+    border-radius: 4px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #freq-display {
+    color: #44ff44;
+    font-size: 14px;
+    text-shadow: 0 0 6px rgba(68,255,68,0.5);
+    letter-spacing: 2px;
+    min-width: 120px;
+    text-align: center;
+  }
+
+  .dial-btn {
+    background: #0a1810;
+    border: 1px solid #2a4a30;
+    color: #44dd44;
+    padding: 3px 8px;
+    font-size: 9px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+  }
+
+  .dial-btn:hover {
+    background: #0a2818;
+    border-color: #44ff44;
+    color: #88ff88;
+  }
+
+  .dial-btn.active {
+    background: #0a3020;
+    border-color: #44ff44;
+    color: #44ff44;
+    box-shadow: 0 0 4px rgba(68,255,68,0.3);
+  }
+
+  /* Now Playing */
+  #now-playing {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    background: rgba(5,3,8,0.85);
+    border: 1px solid #2a4a30;
+    border-radius: 4px;
+    padding: 6px 16px;
+    text-align: center;
+    min-width: 300px;
+    max-width: 80%;
+  }
+
+  #np-title {
+    color: #e8b840;
+    font-size: 12px;
+    text-shadow: 0 0 4px rgba(232,184,64,0.3);
+    letter-spacing: 1px;
+  }
+
+  #np-author {
+    color: #8a6a30;
+    font-size: 9px;
+    margin-top: 2px;
+  }
+
+  #np-description {
+    color: #4a6a4a;
+    font-size: 8px;
+    margin-top: 3px;
+    font-style: italic;
+  }
+
+  /* Controls */
+  #controls {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .ctrl-btn {
+    background: rgba(5,3,8,0.85);
+    border: 1px solid #2a4a30;
+    color: #44dd44;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+
+  .ctrl-btn:hover {
+    background: rgba(10,40,24,0.85);
+    border-color: #44ff44;
+    color: #88ff88;
+  }
+
+  .ctrl-btn:active {
+    transform: scale(0.95);
+  }
+
+  #volume-slider {
+    width: 80px;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #0a1810;
+    border: 1px solid #2a4a30;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  #volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 8px;
+    height: 14px;
+    background: #44dd44;
+    border-radius: 1px;
+    cursor: pointer;
+  }
+
+  /* Track list */
+  #track-list {
+    position: absolute;
+    top: 60px;
+    right: 8px;
+    width: 200px;
+    max-height: 120px;
+    overflow-y: auto;
+    z-index: 40;
+    background: rgba(5,3,8,0.8);
+    border: 1px solid #2a4a30;
+    border-radius: 3px;
+    padding: 4px;
+    display: none;
+  }
+
+  #track-list.visible { display: block; }
+
+  .track-item {
+    color: #44aa44;
+    font-size: 8px;
+    padding: 3px 4px;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  .track-item:hover {
+    background: rgba(10,40,24,0.8);
+    color: #88ff88;
+  }
+
+  .track-item.playing {
+    color: #e8b840;
+    background: rgba(40,30,8,0.5);
+  }
+
+  .track-item .track-num {
+    color: #2a5a2a;
+    margin-right: 4px;
+  }
+
+  /* Chalkboard frequency list */
+  #chalkboard {
+    position: absolute;
+    top: 55px;
+    left: 8px;
+    z-index: 40;
+    background: rgba(10,15,8,0.75);
+    border: 1px solid #3a3a1a;
+    border-radius: 2px;
+    padding: 6px 10px;
+    max-width: 130px;
+  }
+
+  #chalkboard .chalk-title {
+    color: #ddddaa;
+    font-size: 7px;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    text-align: center;
+    border-bottom: 1px dashed #3a3a1a;
+    padding-bottom: 2px;
+  }
+
+  .chalk-freq {
+    color: #aaaa77;
+    font-size: 7px;
+    line-height: 1.4;
+    letter-spacing: 0.5px;
+  }
+
+  .chalk-freq .freq-num {
+    color: #ddcc88;
+  }
+
+  /* Ambient bubbles (NPC reactions) */
+  .ambient-bubble {
+    position: absolute;
+    z-index: 60;
+    background: rgba(5,3,8,0.9);
+    border: 1px solid #4a3520;
+    color: #c8a050;
+    padding: 4px 8px;
+    font-size: 9px;
+    border-radius: 4px;
+    max-width: 200px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+
+  .ambient-bubble.visible {
+    opacity: 1;
+  }
+
+  /* Signal meter */
+  #signal-meter {
+    position: absolute;
+    bottom: 50px;
+    right: 12px;
+    z-index: 40;
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
+  .signal-bar {
+    width: 3px;
+    background: #0a2818;
+    border-radius: 1px;
+  }
+
+  .signal-bar.active {
+    background: #44ff44;
+    box-shadow: 0 0 2px rgba(68,255,68,0.5);
+  }
+
+  /* VT indicator */
+  #vt-indicator {
+    position: absolute;
+    bottom: 50px;
+    left: 12px;
+    z-index: 40;
+    color: #2a4a30;
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+
+  #vt-indicator .rec-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background: #440000;
+    border-radius: 50%;
+    margin-right: 3px;
+    vertical-align: middle;
+  }
+
+  #vt-indicator.transmitting .rec-dot {
+    background: #ff4444;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Fade overlay */
+  #fade-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 200;
+    pointer-events: none;
+    transition: opacity 1s ease;
+  }
+
+  #fade-overlay.fade-out {
+    opacity: 0;
+  }
+
+  #loading-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #44dd44;
+    font-size: 14px;
+    letter-spacing: 3px;
+    z-index: 201;
+    opacity: 0;
+    transition: opacity 0.5s;
+    text-shadow: 0 0 10px rgba(68,221,68,0.4);
+  }
+
+  #loading-text.visible { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="radio-container">
+  <canvas id="radio-canvas" width="320" height="200"></canvas>
+  <div id="crt-overlay"></div>
+  
+  <div id="status-bar">
+    <span class="left">◆ THE RADIO ROOM ◆</span>
+    <span class="right" id="status-freq">— MHz</span>
+  </div>
+
+  <!-- Chalkboard frequency guide -->
+  <div id="chalkboard">
+    <div class="chalk-title">— FREQS —</div>
+    <div class="chalk-freq"><span class="freq-num">2182</span> Fleet Radio</div>
+    <div class="chalk-freq"><span class="freq-num">Ch 4</span> Podcasts</div>
+    <div class="chalk-freq"><span class="freq-num">Ch 7</span> Ambient</div>
+    <div class="chalk-freq"><span class="freq-num">0000</span> Static</div>
+  </div>
+
+  <!-- Frequency dial -->
+  <div id="dial-panel">
+    <button class="dial-btn" data-channel="2182">2182 kHz</button>
+    <button class="dial-btn" data-channel="podcast">PODCAST</button>
+    <button class="dial-btn" data-channel="ambient">AMBIENT</button>
+    <button class="dial-btn" data-channel="static">STATIC</button>
+  </div>
+
+  <!-- Now Playing -->
+  <div id="now-playing">
+    <div id="np-title">— TUNE TO A FREQUENCY —</div>
+    <div id="np-author">&nbsp;</div>
+    <div id="np-description">&nbsp;</div>
+  </div>
+
+  <!-- Track list -->
+  <div id="track-list"></div>
+
+  <!-- Signal meter -->
+  <div id="signal-meter">
+    <div class="signal-bar" style="height:4px"></div>
+    <div class="signal-bar" style="height:6px"></div>
+    <div class="signal-bar" style="height:8px"></div>
+    <div class="signal-bar" style="height:10px"></div>
+    <div class="signal-bar" style="height:12px"></div>
+  </div>
+
+  <!-- VT (Voice Transmission) indicator -->
+  <div id="vt-indicator">
+    <span class="rec-dot"></span>RECEIVE
+  </div>
+
+  <!-- Controls -->
+  <div id="controls">
+    <button class="ctrl-btn" id="btn-prev" title="Previous">◀◀</button>
+    <button class="ctrl-btn" id="btn-play" title="Play/Pause">▶</button>
+    <button class="ctrl-btn" id="btn-next" title="Next">▶▶</button>
+    <input type="range" id="volume-slider" min="0" max="100" value="60">
+  </div>
+
+  <div id="fade-overlay">
+    <div id="loading-text">◆ THE RADIO ROOM ◆</div>
+  </div>
+</div>
+
+<script src="audio-backend.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+// THE RADIO ROOM — Visual + Audio
+// ════════════════════════════════════════════════════════════
+
+const canvas = document.getElementById('radio-canvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+let glowPhase = 0;
+let staticPhase = 0;
+let tapePhase = 0;
+let antennaPhase = 0;
+let vuPhase = 0;
+let signalLevel = 0;
+
+// ── Radio Room Scene ──
+function drawRadioRoom() {
+  glowPhase += 0.04;
+  staticPhase += 0.08;
+  tapePhase += 0.06;
+  antennaPhase += 0.02;
+  vuPhase += 0.05;
+
+  // Background — dark bulkhead
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, 200);
+  bgGrad.addColorStop(0, '#050308');
+  bgGrad.addColorStop(0.5, '#080610');
+  bgGrad.addColorStop(1, '#0a0814');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, 320, 200);
+
+  // Wall paneling
+  ctx.strokeStyle = 'rgba(20,10,25,0.5)';
+  for (let x = 0; x < 320; x += 24) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 130); ctx.stroke();
+  }
+  for (let y = 0; y < 130; y += 20) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke();
+  }
+
+  // Floor — metal deck plate
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 130, 320, 70);
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  for (let x = 0; x < 320; x += 12) {
+    ctx.beginPath(); ctx.moveTo(x, 130); ctx.lineTo(x, 200); ctx.stroke();
+  }
+  for (let y = 135; y < 200; y += 8) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke();
+  }
+
+  // ── SHELF / CONSOLE ──
+  ctx.fillStyle = '#1a1520'; ctx.fillRect(20, 60, 280, 75);
+  ctx.fillStyle = '#12101a'; ctx.fillRect(24, 64, 272, 67);
+  // Console top edge
+  ctx.fillStyle = '#252030'; ctx.fillRect(20, 60, 280, 3);
+
+  // ── RADIO RECEIVER (main unit) ──
+  const rx = 60, ry = 68, rw = 110, rh = 55;
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(rx, ry, rw, rh);
+  ctx.fillStyle = '#222222'; ctx.fillRect(rx+2, ry+2, rw-4, rh-4);
+  
+  // Radio face plate
+  ctx.fillStyle = '#333333'; ctx.fillRect(rx+4, ry+4, rw-8, rh-8);
+  
+  // Frequency display (green LCD)
+  const lcdFlicker = Math.sin(glowPhase * 3) * 0.05 + 0.95;
+  ctx.fillStyle = `rgba(10,40,10,${lcdFlicker})`; 
+  ctx.fillRect(rx+8, ry+8, 60, 14);
+  ctx.fillStyle = `rgba(68,255,68,${lcdFlicker})`;
+  ctx.font = '7px monospace';
+  const freqText = currentFreqText;
+  ctx.fillText(freqText, rx+12, ry+18);
+  
+  // Signal strength bars on LCD
+  for (let i = 0; i < 5; i++) {
+    const barActive = i < signalLevel;
+    ctx.fillStyle = barActive ? `rgba(68,255,68,${lcdFlicker})` : 'rgba(10,60,10,0.3)';
+    ctx.fillRect(rx+8 + i*4, ry+22, 2, 3);
+  }
+  
+  // Channel selector knob
+  const knobX = rx + 85, knobY = ry + 25, knobR = 8;
+  ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(knobX, knobY, knobR, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#444444'; ctx.beginPath(); ctx.arc(knobX, knobY, knobR-2, 0, Math.PI*2); ctx.fill();
+  // Knob indicator line
+  const knobAngle = knobRotation;
+  ctx.strokeStyle = '#888888'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(knobX, knobY);
+  ctx.lineTo(knobX + Math.cos(knobAngle)*(knobR-3), knobY + Math.sin(knobAngle)*(knobR-3));
+  ctx.stroke();
+  
+  // Radio LEDs
+  const ledOn = Math.sin(glowPhase * 4) > 0;
+  ctx.fillStyle = ledOn ? '#44ff44' : '#0a2a0a';
+  ctx.fillRect(rx+10, ry+40, 3, 3);
+  ctx.fillStyle = '#442200';
+  ctx.fillRect(rx+15, ry+40, 3, 3);
+  ctx.fillStyle = isTransmitting ? '#ff4444' : '#440000';
+  ctx.fillRect(rx+20, ry+40, 3, 3);
+  
+  // Speaker grille
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(rx+30, ry+38, 40, 12);
+  ctx.strokeStyle = 'rgba(60,60,60,0.4)';
+  for (let gx = rx+32; gx < rx+70; gx += 3) {
+    ctx.beginPath(); ctx.moveTo(gx, ry+38); ctx.lineTo(gx, ry+50); ctx.stroke();
+  }
+  for (let gy = ry+39; gy < ry+50; gy += 3) {
+    ctx.beginPath(); ctx.moveTo(rx+30, gy); ctx.lineTo(rx+70, gy); ctx.stroke();
+  }
+
+  // ── TAPE DECK ──
+  const tx = 180, ty = 70, tw = 80, th = 45;
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(tx, ty, tw, th);
+  ctx.fillStyle = '#222'; ctx.fillRect(tx+2, ty+2, tw-4, th-4);
+  
+  // Reel 1
+  const reel1X = tx + 18, reel1Y = ty + 18, reelR = 10;
+  ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.arc(reel1X, reel1Y, reelR, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#555'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(reel1X, reel1Y, reelR-1, 0, Math.PI*2); ctx.stroke();
+  // Spinning reel spokes
+  const reelAngle = tapePhase * 2;
+  for (let i = 0; i < 6; i++) {
+    const a = reelAngle + (i / 6) * Math.PI * 2;
+    ctx.strokeStyle = '#444';
+    ctx.beginPath();
+    ctx.moveTo(reel1X, reel1Y);
+    ctx.lineTo(reel1X + Math.cos(a)*(reelR-2), reel1Y + Math.sin(a)*(reelR-2));
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(reel1X, reel1Y, 2, 0, Math.PI*2); ctx.fill();
+  
+  // Reel 2
+  const reel2X = tx + 58, reel2Y = ty + 18;
+  ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.arc(reel2X, reel2Y, reelR, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#555';
+  ctx.beginPath(); ctx.arc(reel2X, reel2Y, reelR-1, 0, Math.PI*2); ctx.stroke();
+  for (let i = 0; i < 6; i++) {
+    const a = -reelAngle + (i / 6) * Math.PI * 2;
+    ctx.strokeStyle = '#444';
+    ctx.beginPath();
+    ctx.moveTo(reel2X, reel2Y);
+    ctx.lineTo(reel2X + Math.cos(a)*(reelR-2), reel2Y + Math.sin(a)*(reelR-2));
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(reel2X, reel2Y, 2, 0, Math.PI*2); ctx.fill();
+  
+  // Tape between reels
+  ctx.strokeStyle = 'rgba(80,60,30,0.6)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(reel1X + reelR-1, reel1Y); ctx.lineTo(reel2X - reelR+1, reel2Y); ctx.stroke();
+  
+  // Tape deck buttons
+  const btns = [tx+8, tx+18, tx+28, tx+38];
+  btns.forEach((bx, i) => {
+    ctx.fillStyle = '#333'; ctx.fillRect(bx, ty+34, 8, 6);
+    ctx.fillStyle = '#444'; ctx.fillRect(bx+1, ty+35, 6, 4);
+    // Play indicator on button 2
+    if (i === 1 && isPlaying) {
+      ctx.fillStyle = '#44ff44'; ctx.fillRect(bx+3, ty+36, 2, 2);
+    }
+  });
+  
+  // Tape deck label
+  ctx.fillStyle = '#555'; ctx.font = '4px monospace';
+  ctx.fillText('REVOX B77', tx+8, ty+9);
+
+  // ── CHALKBOARD ──
+  const cbx = 15, cby = 40, cbw = 40, cbh = 25;
+  ctx.fillStyle = '#0a0a05'; ctx.fillRect(cbx, cby, cbw, cbh);
+  ctx.strokeStyle = '#3a3a1a'; ctx.lineWidth = 1;
+  ctx.strokeRect(cbx, cby, cbw, cbh);
+  // Chalk text
+  ctx.fillStyle = '#aaaa77'; ctx.font = '3px monospace';
+  ctx.fillText('FREQS', cbx+12, cby+5);
+  ctx.fillStyle = '#ddcc88';
+  ctx.fillText('2182', cbx+3, cby+11);
+  ctx.fillStyle = '#aaaa77';
+  ctx.fillText('Fleet', cbx+18, cby+11);
+  ctx.fillStyle = '#ddcc88';
+  ctx.fillText('Ch4', cbx+3, cby+16);
+  ctx.fillStyle = '#aaaa77';
+  ctx.fillText('Pod', cbx+18, cby+16);
+  ctx.fillStyle = '#ddcc88';
+  ctx.fillText('Ch7', cbx+3, cby+21);
+  ctx.fillStyle = '#aaaa77';
+  ctx.fillText('Amb', cbx+18, cby+21);
+
+  // ── ANTENNA WIRE ── (going up from radio)
+  ctx.strokeStyle = 'rgba(80,80,80,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(rx + 50, ry);
+  // Wavy antenna wire
+  for (let y = ry; y > 20; y -= 4) {
+    const wave = Math.sin(antennaPhase + y * 0.1) * 1.5;
+    ctx.lineTo(rx + 50 + wave, y);
+  }
+  ctx.stroke();
+  // Antenna tip
+  ctx.fillStyle = '#cc4422';
+  const tipY = 20;
+  const tipBlink = Math.sin(glowPhase * 2) > 0 ? 1 : 0.3;
+  ctx.fillStyle = `rgba(204,68,34,${tipBlink})`;
+  ctx.fillRect(rx + 49, tipY, 2, 2);
+
+  // ── VU METER ── (small gauge on console)
+  const vux = 270, vuy = 75, vur = 12;
+  ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.arc(vux, vuy, vur, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.beginPath(); ctx.arc(vux, vuy, vur-1, 0, Math.PI*2); ctx.stroke();
+  // VU needle
+  const vuAmp = isPlaying ? Math.sin(vuPhase) * 0.3 + 0.2 : 0;
+  const vuAngle = -Math.PI * 0.75 + vuAmp * Math.PI * 0.75;
+  ctx.strokeStyle = '#cc4422'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(vux, vuy);
+  ctx.lineTo(vux + Math.cos(vuAngle)*(vur-2), vuy + Math.sin(vuAngle)*(vur-2));
+  ctx.stroke();
+  // VU labels
+  ctx.fillStyle = '#444'; ctx.font = '3px monospace';
+  ctx.fillText('VU', vux-2, vuy+8);
+  ctx.fillStyle = '#332'; ctx.fillText('-20', vux-9, vuy+2);
+  ctx.fillStyle = '#632'; ctx.fillText('+3', vux+5, vuy+2);
+
+  // ── STATIC VISUALIZATION ── (when on static channel)
+  if (isStatic) {
+    for (let i = 0; i < 60; i++) {
+      const sx = Math.random() * 320;
+      const sy = 60 + Math.random() * 75;
+      const alpha = Math.random() * 0.3;
+      ctx.fillStyle = `rgba(100,150,100,${alpha})`;
+      ctx.fillRect(sx, sy, 1, 1);
+    }
+  }
+
+  // ── WARM GLOW from tubes ──
+  const tubeGlow = (Math.sin(glowPhase) + 1) * 0.5;
+  const tg = ctx.createRadialGradient(280, 90, 5, 280, 90, 40);
+  tg.addColorStop(0, `rgba(255,180,60,${0.04 + tubeGlow * 0.03})`);
+  tg.addColorStop(1, 'rgba(255,120,30,0)');
+  ctx.fillStyle = tg; ctx.fillRect(240, 50, 80, 80);
+
+  // ── VIGNETTE ──
+  const vg = ctx.createRadialGradient(160, 90, 40, 160, 120, 180);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(0.5, 'rgba(0,0,0,0.2)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
+}
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+
+let currentFreqText = '— — — —';
+let knobRotation = -Math.PI / 2;
+let isTransmitting = false;
+let isStatic = false;
+let isPlaying = false;
+
+const manifest = new AudioManifest();
+const player = new RadioPlayer(manifest);
+const npcReactions = new NPCReactions();
+
+// ── Load manifest ──
+manifest.load().then(() => {
+  console.log('[RadioRoom] Manifest loaded');
+  updateTrackList();
+});
+
+// ── Player callbacks ──
+player.onTrackChange = (track) => {
+  const npTitle = document.getElementById('np-title');
+  const npAuthor = document.getElementById('np-author');
+  const npDesc = document.getElementById('np-description');
+  
+  if (track) {
+    npTitle.textContent = '♪ ' + track.title + ' ♪';
+    npAuthor.textContent = track.author;
+    npDesc.textContent = track.description || '';
+    currentFreqText = track.id.toUpperCase();
+    isStatic = false;
+  } else {
+    npTitle.textContent = '~ ~ static ~ ~';
+    npAuthor.textContent = 'between stations';
+    npDesc.textContent = 'the sound of rain that is not rain';
+    currentFreqText = '— — — —';
+    isStatic = true;
+  }
+  
+  document.getElementById('status-freq').textContent = currentFreqText;
+  updateTrackList();
+};
+
+player.onPlayStateChange = (playing) => {
+  isPlaying = playing;
+  isTransmitting = playing;
+  document.getElementById('btn-play').textContent = playing ? '⏸' : '▶';
+  document.getElementById('vt-indicator').classList.toggle('transmitting', playing);
+  document.getElementById('vt-indicator').lastChild.textContent = playing ? 'TRANSMIT' : 'RECEIVE';
+};
+
+player.onChannelChange = (channelId, firstTrack) => {
+  // Update dial buttons
+  document.querySelectorAll('.dial-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.channel === channelId);
+  });
+  
+  // Rotate knob
+  const rotations = { '2182': -Math.PI/2, 'podcast': 0, 'ambient': Math.PI/2, 'static': Math.PI };
+  knobRotation = rotations[channelId] ?? -Math.PI / 2;
+  
+  // Update signal level
+  signalLevel = channelId === 'static' ? 1 : channelId === 'ambient' ? 3 : 5;
+  
+  // Update frequency text
+  const channel = manifest.channels[channelId];
+  if (channel) {
+    document.getElementById('status-freq').textContent = channel.label.split('—')[0].trim();
+  }
+  
+  updateTrackList();
+};
+
+// ── Track list ──
+function updateTrackList() {
+  const list = document.getElementById('track-list');
+  if (!player.currentChannel || player.currentChannel === 'static') {
+    list.classList.remove('visible');
+    return;
+  }
+  const tracks = manifest.getTracksByChannel(player.currentChannel);
+  if (tracks.length === 0) {
+    list.classList.remove('visible');
+    return;
+  }
+  list.classList.add('visible');
+  list.innerHTML = '';
+  const nowPlaying = player.getNowPlaying();
+  tracks.forEach((track, i) => {
+    const item = document.createElement('div');
+    item.className = 'track-item';
+    if (nowPlaying && nowPlaying.id === track.id) item.classList.add('playing');
+    const hasAudio = track.audio_file || track.source_file;
+    const icon = hasAudio ? '♪' : '○';
+    item.innerHTML = `<span class="track-num">${icon}</span>${track.title}`;
+    item.title = track.description || '';
+    item.addEventListener('click', () => {
+      player.currentTrackIndex = i;
+      const t = manifest.getTracksByChannel(player.currentChannel)[i];
+      player._playTrack(t);
+    });
+    list.appendChild(item);
+  });
+}
+
+// ── Dial buttons ──
+document.querySelectorAll('.dial-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const channel = btn.dataset.channel;
+    if (channel === 'static') {
+      player.tuneToStatic();
+    } else {
+      player.tuneTo(channel);
+    }
+  });
+});
+
+// ── Controls ──
+document.getElementById('btn-play').addEventListener('click', () => {
+  if (isPlaying) player.pause(); else player.play();
+});
+document.getElementById('btn-next').addEventListener('click', () => player.next());
+document.getElementById('btn-prev').addEventListener('click', () => player.prev());
+
+document.getElementById('volume-slider').addEventListener('input', (e) => {
+  player.setVolume(e.target.value / 100);
+});
+
+// ── Signal meter animation ──
+setInterval(() => {
+  const bars = document.querySelectorAll('.signal-bar');
+  bars.forEach((bar, i) => {
+    const threshold = i + 1;
+    const visible = signalLevel >= threshold && Math.random() > 0.1;
+    bar.classList.toggle('active', visible);
+  });
+}, 150);
+
+// ── Animate ──
+function animate() {
+  drawRadioRoom();
+  requestAnimationFrame(animate);
+}
+
+// ── Boot ──
+window.addEventListener('load', () => {
+  const loadingText = document.getElementById('loading-text');
+  const fadeOverlay = document.getElementById('fade-overlay');
+  
+  setTimeout(() => loadingText.classList.add('visible'), 200);
+  setTimeout(() => {
+    loadingText.classList.remove('visible');
+    fadeOverlay.classList.add('fade-out');
+  }, 1200);
+  
+  animate();
+});
+
+// ── Listen for messages from parent (game integration) ──
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'tune-radio') {
+    player.tuneTo(e.data.channel);
+  } else if (e.data.type === 'radio-play') {
+    player.play();
+  } else if (e.data.type === 'radio-pause') {
+    player.pause();
+  } else if (e.data.type === 'get-now-playing') {
+    const track = player.getNowPlaying();
+    e.source.postMessage({ type: 'now-playing', track: track }, e.origin);
+  }
+});
+</script>
+
+</body>
+</html>

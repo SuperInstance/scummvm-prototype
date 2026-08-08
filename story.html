@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plato's Shell — Story Mode</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Courier New', Courier, monospace;
+    color: #c8a050;
+  }
+
+  /* ══ TOP BAR ══ */
+  #top-bar {
+    height: 36px;
+    background: linear-gradient(180deg, #0a0700, #0d0900);
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    flex-shrink: 0;
+  }
+  #top-bar .title {
+    color: #c8a050;
+    font-size: 12px;
+    letter-spacing: 3px;
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(200,160,80,0.3);
+  }
+  #top-bar .connection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    color: #666;
+  }
+  .conn-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #44ff44;
+    animation: pulse 2s infinite;
+  }
+  .conn-dot.offline { background: #ff4444; animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+    50% { opacity: 0.4; box-shadow: none; }
+  }
+
+  /* ══ MAIN CONTAINER ══ */
+  #story-container {
+    display: flex;
+    height: calc(100vh - 36px);
+    width: 100vw;
+  }
+
+  /* ══ LEFT PANEL — Voice Interface ══ */
+  #voice-panel {
+    width: 22%;
+    min-width: 260px;
+    background: #080500;
+    border-right: 1px solid #1a1208;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #voice-panel .panel-header {
+    padding: 8px 12px;
+    background: #0d0900;
+    border-bottom: 1px solid #1a1208;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #8a6a30;
+    text-transform: uppercase;
+  }
+
+  /* Voice controls */
+  #voice-controls {
+    padding: 16px 12px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    border-bottom: 1px solid #1a1208;
+  }
+
+  .voice-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 2px solid #4a3520;
+    background: #0d0900;
+    color: #c8a050;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .voice-btn:hover {
+    border-color: #c8a050;
+    box-shadow: 0 0 12px rgba(200,160,80,0.2);
+  }
+  .voice-btn.active {
+    border-color: #ff4444;
+    background: rgba(255,68,68,0.1);
+    color: #ff4444;
+    animation: micPulse 1.5s infinite;
+  }
+  @keyframes micPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,68,68,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(255,68,68,0); }
+  }
+
+  /* Voice quality bars */
+  #voice-quality {
+    padding: 8px 12px;
+    border-bottom: 1px solid #1a1208;
+  }
+  .quality-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    font-size: 9px;
+    color: #5a4a30;
+  }
+  .quality-label {
+    width: 42px;
+    text-align: right;
+    letter-spacing: 0.5px;
+  }
+  .quality-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: #0a0700;
+    border: 1px solid #1a1208;
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .quality-bar-fill {
+    height: 100%;
+    width: 0%;
+    transition: width 0.1s ease;
+    border-radius: 1px;
+  }
+  #pitch-bar { background: linear-gradient(90deg, #4a8a4a, #8aaa4a, #aa8a4a); }
+  #pace-bar { background: linear-gradient(90deg, #4a6a8a, #4a8a8a, #4aaaaa); }
+  #volume-bar { background: linear-gradient(90deg, #8a4a4a, #aa6a4a, #aa8a4a); }
+
+  /* Transcript area */
+  #transcript-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  #transcript-area::-webkit-scrollbar { width: 4px; }
+  #transcript-area::-webkit-scrollbar-thumb { background: #2a1e10; }
+
+  .transcript-line {
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+  .transcript-line.human {
+    color: #8888cc;
+  }
+  .transcript-line.human::before {
+    content: 'YOU: ';
+    color: #4a4a6a;
+    font-size: 9px;
+  }
+  .transcript-line.agent {
+    color: #c8a050;
+  }
+  .transcript-line.agent::before {
+    content: 'AGENT: ';
+    color: #6a5a30;
+    font-size: 9px;
+  }
+  .transcript-line .speaker-name {
+    font-size: 9px;
+    color: #8a6a30;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Puppet command input */
+  #command-input-section {
+    border-top: 1px solid #1a1208;
+    padding: 8px;
+  }
+  #command-input {
+    width: 100%;
+    background: #0a0700;
+    border: 1px solid #2a1e10;
+    color: #c8a050;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    outline: none;
+    border-radius: 2px;
+  }
+  #command-input:focus {
+    border-color: #4a3520;
+  }
+  #command-input::placeholder {
+    color: #3a2a10;
+  }
+  #command-hint {
+    font-size: 8px;
+    color: #3a2a10;
+    margin-top: 4px;
+    text-align: center;
+  }
+
+  /* ══ CENTER PANEL — The Stage ══ */
+  #stage-panel {
+    flex: 1;
+    background: #000;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #stage-frame {
+    position: relative;
+    width: 100%;
+    max-width: 960px;
+    aspect-ratio: 320/200;
+    background: #0a0700;
+    overflow: hidden;
+    image-rendering: pixelated;
+  }
+
+  #story-backdrop {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    z-index: 1;
+    display: none;
+    transition: opacity 1.5s ease;
+  }
+
+  #story-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    image-rendering: pixelated;
+    z-index: 2;
+  }
+
+  #stage-content {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 3;
+    overflow: hidden;
+  }
+
+  /* CRT overlay */
+  #crt-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 100;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.12) 3px,
+      rgba(0,0,0,0.12) 4px
+    );
+  }
+
+  /* Fade overlay for transitions */
+  #story-fade {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 200;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+
+  /* Status bar on stage */
+  #stage-status {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 4px 8px;
+    background: rgba(10,7,0,0.85);
+    border-bottom: 1px solid #2a1e10;
+    color: #8a6a30;
+    font-size: 10px;
+    z-index: 50;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    letter-spacing: 1px;
+  }
+
+  /* Scene label */
+  #scene-label {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(10,7,0,0.8);
+    color: #c8a050;
+    padding: 3px 8px;
+    font-size: 10px;
+    z-index: 50;
+    letter-spacing: 1px;
+    border: 1px solid #2a1e10;
+  }
+
+  /* ══ RIGHT PANEL — Agent Annotations ══ */
+  #annotation-panel {
+    width: 24%;
+    min-width: 280px;
+    background: #080500;
+    border-left: 1px solid #1a1208;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #annotation-panel .panel-header {
+    padding: 8px 12px;
+    background: #0d0900;
+    border-bottom: 1px solid #1a1208;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #8a6a30;
+    text-transform: uppercase;
+  }
+
+  /* Tabs */
+  #annotation-tabs {
+    display: flex;
+    border-bottom: 1px solid #1a1208;
+  }
+  .tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #4a3a20;
+    padding: 6px 4px;
+    font-size: 9px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+    border-bottom: 2px solid transparent;
+    font-family: 'Courier New', monospace;
+  }
+  .tab-btn:hover { color: #8a6a30; }
+  .tab-btn.active {
+    color: #c8a050;
+    border-bottom-color: #c8a050;
+  }
+
+  /* Tab content areas */
+  .tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+    font-size: 10px;
+    display: none;
+  }
+  .tab-content.active { display: block; }
+  .tab-content::-webkit-scrollbar { width: 4px; }
+  .tab-content::-webkit-scrollbar-thumb { background: #2a1e10; }
+
+  /* Feed entries */
+  .feed-entry {
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    border-left: 2px solid #2a1e10;
+    line-height: 1.5;
+  }
+  .feed-entry .feed-time {
+    font-size: 8px;
+    color: #4a3a20;
+    float: right;
+  }
+  .feed-entry.command { border-left-color: #8a8a4a; }
+  .feed-entry.action { border-left-color: #aa6a3a; color: #aa8855; }
+  .feed-entry.speech { border-left-color: #4a8a8a; color: #6aaa9a; }
+  .feed-entry.system { border-left-color: #4a4a8a; color: #6666aa; }
+  .feed-entry.error { border-left-color: #aa4a4a; color: #aa6666; }
+  .feed-entry.backdrop { border-left-color: #8a4a8a; color: #9a6a9a; }
+  .feed-entry.warp { border-left-color: #ffaa20; color: #cc8830; }
+  .feed-entry.minigame { border-left-color: #4a8a4a; color: #5a9a5a; }
+  .feed-entry.complete { border-left-color: #44aa44; color: #4a8a4a; }
+  .feed-entry.processing { border-left-color: #4a6a8a; color: #5a7a9a; }
+  .feed-entry.emotion { border-left-color: #aa4a8a; color: #9a6a8a; }
+  .feed-entry.ambient { border-left-color: #4a8a6a; color: #5a9a7a; }
+  .feed-entry.effect { border-left-color: #8a8a4a; color: #9a9a5a; }
+  .feed-entry.queue { border-left-color: #6a5a3a; color: #7a6a4a; }
+  .feed-entry.cache { border-left-color: #5a5a5a; color: #6a6a6a; }
+  .feed-entry.warning { border-left-color: #cc8830; color: #aa7730; }
+
+  /* State tracker */
+  #state-tracker {
+    padding: 8px 10px;
+  }
+  .state-section {
+    margin-bottom: 8px;
+  }
+  .state-label {
+    font-size: 8px;
+    color: #4a3a20;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+  .state-value {
+    color: #c8a050;
+    font-size: 11px;
+  }
+  .char-badge {
+    display: inline-block;
+    background: #0d0900;
+    border: 1px solid #2a1e10;
+    padding: 2px 6px;
+    margin: 2px;
+    font-size: 9px;
+    border-radius: 2px;
+  }
+  .char-badge .gesture {
+    color: #6a5a30;
+    font-size: 8px;
+  }
+  .prop-badge {
+    display: inline-block;
+    background: #0a1000;
+    border: 1px solid #1a2010;
+    padding: 2px 6px;
+    margin: 2px;
+    font-size: 9px;
+    border-radius: 2px;
+  }
+  /* Tension meter */
+  #tension-meter {
+    height: 8px;
+    background: #0a0700;
+    border: 1px solid #1a1208;
+    border-radius: 1px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  #tension-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4a8a4a, #aa8a4a, #aa4a4a);
+    transition: width 0.5s ease;
+  }
+
+  /* Asset queue display */
+  #asset-queue {
+    padding: 8px 10px;
+  }
+  .queue-item {
+    padding: 4px 6px;
+    margin-bottom: 4px;
+    background: #0a0700;
+    border-left: 2px solid #2a1e10;
+    font-size: 10px;
+  }
+  .queue-item.processing { border-left-color: #4a6a8a; }
+  .queue-item.completed { border-left-color: #4a8a4a; }
+  .queue-stats {
+    font-size: 9px;
+    color: #4a3a20;
+    margin-bottom: 6px;
+  }
+
+  /* Director view */
+  #director-view {
+    padding: 8px 10px;
+  }
+  .director-puppet {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    margin-bottom: 4px;
+    background: #0a0700;
+    border-radius: 2px;
+  }
+  .puppet-icon {
+    width: 24px;
+    height: 24px;
+    image-rendering: pixelated;
+  }
+  .puppet-info {
+    flex: 1;
+    font-size: 9px;
+  }
+  .puppet-name {
+    color: #c8a050;
+    font-size: 10px;
+  }
+  .puppet-status {
+    color: #5a4a30;
+    font-size: 8px;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    #story-container { flex-direction: column; }
+    #voice-panel, #annotation-panel { width: 100%; min-width: 0; max-height: 200px; }
+    #stage-panel { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div id="top-bar">
+  <span class="title">◆ PLATO'S SHELL — STORY MODE ◆</span>
+  <span class="connection">
+    <span class="conn-dot" id="conn-dot"></span>
+    <span id="conn-text">CONNECTED</span>
+  </span>
+</div>
+
+<!-- Main 3-Panel Container -->
+<div id="story-container">
+
+  <!-- ══ LEFT: Voice Interface ══ -->
+  <div id="voice-panel">
+    <div class="panel-header">◆ Voice Interface</div>
+
+    <div id="voice-controls">
+      <button class="voice-btn" id="mic-btn" title="Start/stop listening">🎤</button>
+      <button class="voice-btn" id="speaker-btn" title="Toggle TTS">🔊</button>
+    </div>
+
+    <div id="voice-quality">
+      <div class="quality-row">
+        <span class="quality-label">PITCH</span>
+        <div class="quality-bar-bg"><div class="quality-bar-fill" id="pitch-bar"></div></div>
+      </div>
+      <div class="quality-row">
+        <span class="quality-label">PACE</span>
+        <div class="quality-bar-bg"><div class="quality-bar-fill" id="pace-bar"></div></div>
+      </div>
+      <div class="quality-row">
+        <span class="quality-label">VOLUME</span>
+        <div class="quality-bar-bg"><div class="quality-bar-fill" id="volume-bar"></div></div>
+      </div>
+    </div>
+
+    <div id="transcript-area">
+      <div class="transcript-line system" style="color:#4a3a20;font-size:9px;">
+        ◆ Voice interface ready. Click microphone to begin.
+      </div>
+    </div>
+
+    <div id="command-input-section">
+      <input type="text" id="command-input" placeholder="Enter puppet command..." />
+      <div id="command-hint">e.g. "riker enter" or "backdrop forest"</div>
+    </div>
+  </div>
+
+  <!-- ══ CENTER: The Stage ══ -->
+  <div id="stage-panel">
+    <div id="stage-frame">
+      <img id="story-backdrop" src="" alt="" />
+      <canvas id="story-canvas" width="320" height="200"></canvas>
+      <div id="stage-content"></div>
+
+      <div id="stage-status">
+        <span id="stage-location">◆ The Tap — Bar Rail</span>
+        <span id="stage-time">--:--</span>
+      </div>
+
+      <div id="scene-label">SCENE: bar-rail</div>
+      <div id="crt-overlay"></div>
+      <div id="story-fade"></div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT: Agent Annotations ══ -->
+  <div id="annotation-panel">
+    <div class="panel-header">◆ Agent Annotations</div>
+
+    <div id="annotation-tabs">
+      <button class="tab-btn active" data-tab="feed">Feed</button>
+      <button class="tab-btn" data-tab="state">State</button>
+      <button class="tab-btn" data-tab="assets">Assets</button>
+      <button class="tab-btn" data-tab="director">Director</button>
+    </div>
+
+    <!-- Feed Tab -->
+    <div class="tab-content active" id="feed-tab">
+      <div id="annotation-feed"></div>
+    </div>
+
+    <!-- State Tab -->
+    <div class="tab-content" id="state-tab">
+      <div id="state-tracker"></div>
+    </div>
+
+    <!-- Assets Tab -->
+    <div class="tab-content" id="assets-tab">
+      <div id="asset-queue"></div>
+    </div>
+
+    <!-- Director Tab -->
+    <div class="tab-content" id="director-tab">
+      <div id="director-view"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Audio -->
+<audio id="audio-ambient" loop preload="auto"></audio>
+<audio id="audio-tts" preload="auto"></audio>
+
+<!-- Scripts -->
+<script src="puppet.js"></script>
+<script src="asset-renderer.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+// STORY MODE — Main Controller
+// ════════════════════════════════════════════════════════════
+
+const storyCanvas = document.getElementById('story-canvas');
+const storyCtx = storyCanvas.getContext('2d');
+storyCtx.imageSmoothingEnabled = false;
+
+const stageContent = document.getElementById('stage-content');
+const stageFrame = document.getElementById('stage-frame');
+const transcriptArea = document.getElementById('transcript-area');
+const annotationFeed = document.getElementById('annotation-feed');
+const stateTracker = document.getElementById('state-tracker');
+const assetQueueEl = document.getElementById('asset-queue');
+const directorView = document.getElementById('director-view');
+const sceneLabel = document.getElementById('scene-label');
+const stageLocation = document.getElementById('stage-location');
+const storyBackdrop = document.getElementById('story-backdrop');
+const storyFade = document.getElementById('story-fade');
+const commandInput = document.getElementById('command-input');
+
+// ── State ──
+let currentRoom = 'bar-rail';
+let ttsEnabled = true;
+let listening = false;
+let recognition = null;
+let candlePhase = 0;
+let oceanPhase = 0;
+let radarPhase = 0;
+
+// ── Room definitions (mirrors main prototype) ──
+const ROOM_NAMES = {
+  'bar-rail': 'The Tap — Bar Rail',
+  'aft-deck': 'The Aft Deck',
+  'wheelhouse': 'The Wheelhouse',
+  'galley': 'The Galley',
+  'engine-room': 'The Engine Room',
+  'aft-cockpit': 'The Aft Cockpit'
+};
+
+const ROOM_BG = {
+  'bar-rail': 'assets/rooms/bar-rail.jpg',
+  'aft-deck': 'assets/rooms/aft-deck.jpg',
+  'wheelhouse': 'assets/rooms/wheelhouse.jpg',
+  'galley': 'assets/rooms/galley.jpg',
+  'engine-room': 'assets/rooms/engine-room.jpg'
+};
+
+// ════════════════════════════════════════════════════════════
+// SCENE RENDERING (simplified canvas renderer)
+// ════════════════════════════════════════════════════════════
+
+const PALETTES = {
+  warm: { bg: '#0a0700', wall: '#2a1e10', floor: '#15100a', accent: '#e8b840', dim: '#8a6a30' },
+  darkblue: { bg: '#020812', wall: '#082030', floor: '#061218', accent: '#20c0a0', dim: '#107060' },
+  cyan: { bg: '#000a14', wall: '#002840', floor: '#000a18', accent: '#44ccff', dim: '#226688' },
+  amber: { bg: '#100800', wall: '#2a1808', floor: '#180e04', accent: '#ff9020', dim: '#885010' },
+  darkred: { bg: '#0d0300', wall: '#2a0a02', floor: '#100400', accent: '#ff6020', dim: '#8a3010' },
+  darkgreen: { bg: '#02080c', wall: '#062020', floor: '#041214', accent: '#20c080', dim: '#106048' },
+  forest: { bg: '#0a1a08', wall: '#1a2a14', floor: '#0a1a08', accent: '#4aaa3a', dim: '#2a6a1a' },
+  cave: { bg: '#000410', wall: '#100830', floor: '#080020', accent: '#6040ff', dim: '#302088' },
+  storm: { bg: '#040814', wall: '#082030', floor: '#041020', accent: '#40c0ff', dim: '#104088' },
+  space: { bg: '#000004', wall: '#080012', floor: '#040008', accent: '#ccccff', dim: '#444488' },
+  castle: { bg: '#0a0604', wall: '#2a1810', floor: '#1a0e08', accent: '#c9a227', dim: '#6a5010' },
+  island: { bg: '#082028', wall: '#0a3028', floor: '#104030', accent: '#20d0a0', dim: '#107060' }
+};
+
+const ROOM_PALETTE = {
+  'bar-rail': 'warm', 'aft-deck': 'darkblue', 'wheelhouse': 'cyan',
+  'galley': 'amber', 'engine-room': 'darkred', 'aft-cockpit': 'darkgreen',
+  'forest': 'forest', 'cave': 'cave', 'storm': 'storm',
+  'space': 'space', 'castle': 'castle', 'island': 'island'
+};
+
+function pal() { return PALETTES[ROOM_PALETTE[currentRoom] || 'warm']; }
+
+function drawScene() {
+  candlePhase += 0.04;
+  oceanPhase += 0.015;
+  radarPhase += 0.03;
+
+  const C = pal();
+  storyCtx.fillStyle = C.bg;
+  storyCtx.fillRect(0, 0, 320, 200);
+
+  // Generic atmospheric renderer for all rooms
+  drawAtmosphericScene(C);
+
+  // Draw vignette
+  const vg = storyCtx.createRadialGradient(160, 80, 50, 160, 120, 180);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(0.6, 'rgba(0,0,0,0.2)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  storyCtx.fillStyle = vg;
+  storyCtx.fillRect(0, 0, 320, 200);
+}
+
+function drawAtmosphericScene(C) {
+  // Wall gradient
+  const grad = storyCtx.createLinearGradient(0, 0, 0, 130);
+  grad.addColorStop(0, C.wall);
+  grad.addColorStop(1, C.bg);
+  storyCtx.fillStyle = grad;
+  storyCtx.fillRect(0, 0, 320, 130);
+
+  // Floor
+  storyCtx.fillStyle = C.floor;
+  storyCtx.fillRect(0, 130, 320, 70);
+
+  // Paneling lines
+  storyCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+  for (let x = 0; x < 320; x += 20) {
+    storyCtx.beginPath();
+    storyCtx.moveTo(x, 0);
+    storyCtx.lineTo(x, 130);
+    storyCtx.stroke();
+  }
+  for (let x = 0; x < 320; x += 14) {
+    storyCtx.beginPath();
+    storyCtx.moveTo(x, 130);
+    storyCtx.lineTo(x, 200);
+    storyCtx.stroke();
+  }
+
+  // Atmospheric glow points (candles/lights)
+  const lights = [
+    { x: 80, y: 90, color: C.accent },
+    { x: 200, y: 85, color: C.accent },
+    { x: 160, y: 75, color: C.accent }
+  ];
+  lights.forEach(l => {
+    const flicker = Math.sin(candlePhase + l.x) * 0.5 + Math.random() * 0.3;
+    const glowR = 12 + flicker * 4;
+    const g = storyCtx.createRadialGradient(l.x, l.y, 0, l.x, l.y, glowR);
+    g.addColorStop(0, l.color + '20');
+    g.addColorStop(1, 'transparent');
+    storyCtx.fillStyle = g;
+    storyCtx.fillRect(l.x - glowR, l.y - glowR, glowR * 2, glowR * 2);
+  });
+
+  // Door/exit hints (dark rectangles)
+  storyCtx.fillStyle = C.wall;
+  storyCtx.fillRect(270, 20, 40, 110);
+  storyCtx.fillStyle = C.bg;
+  storyCtx.fillRect(274, 24, 32, 102);
+
+  // Counter/table area
+  storyCtx.fillStyle = C.wall;
+  storyCtx.fillRect(40, 95, 160, 40);
+  storyCtx.fillStyle = C.dim + '40';
+  storyCtx.fillRect(40, 95, 160, 2);
+}
+
+function loadRoomBackground(roomId) {
+  const bgPath = ROOM_BG[roomId];
+  if (!bgPath) {
+    storyBackdrop.style.display = 'none';
+    return;
+  }
+  storyBackdrop.onerror = () => { storyBackdrop.style.display = 'none'; };
+  storyBackdrop.onload = () => {
+    storyBackdrop.style.display = 'block';
+    storyBackdrop.style.opacity = '0';
+    requestAnimationFrame(() => { storyBackdrop.style.opacity = '1'; });
+  };
+  storyBackdrop.src = bgPath;
+}
+
+function changeRoom(room) {
+  currentRoom = room;
+  sceneLabel.textContent = `SCENE: ${room}`;
+  stageLocation.textContent = `◆ ${ROOM_NAMES[room] || room}`;
+  loadRoomBackground(room);
+}
+
+// ════════════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ════════════════════════════════════════════════════════════
+
+function animate() {
+  drawScene();
+  requestAnimationFrame(animate);
+}
+
+// ════════════════════════════════════════════════════════════
+// VOICE INTERFACE
+// ════════════════════════════════════════════════════════════
+
+const micBtn = document.getElementById('mic-btn');
+const speakerBtn = document.getElementById('speaker-btn');
+const pitchBar = document.getElementById('pitch-bar');
+const paceBar = document.getElementById('pace-bar');
+const volumeBar = document.getElementById('volume-bar');
+
+// ── Speech Recognition (STT) ──
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    micBtn.style.opacity = '0.3';
+    micBtn.title = 'Speech recognition not available in this browser';
+    addTranscript('voice', '⚠️ Speech recognition not available. Try Chrome or Edge.');
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    let final = '';
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        final += transcript;
+      } else {
+        interim += transcript;
+      }
+    }
+
+    // Update voice quality based on speech
+    if (final || interim) {
+      updateVoiceQuality(final || interim);
+    }
+
+    if (final) {
+      addTranscript('human', final.trim());
+      // Process as puppet command if it sounds like one
+      processVoiceInput(final.trim());
+    }
+  };
+
+  recognition.onerror = (event) => {
+    if (event.error === 'not-allowed') {
+      addTranscript('system', '⚠️ Microphone access denied.');
+    }
+  };
+
+  recognition.onend = () => {
+    if (listening) {
+      // Auto-restart
+      try { recognition.start(); } catch(e) {}
+    }
+  };
+}
+
+function toggleMic() {
+  if (!recognition) return;
+  if (listening) {
+    listening = false;
+    micBtn.classList.remove('active');
+    try { recognition.stop(); } catch(e) {}
+  } else {
+    listening = true;
+    micBtn.classList.add('active');
+    try { recognition.start(); } catch(e) {}
+  }
+}
+
+micBtn.addEventListener('click', toggleMic);
+
+speakerBtn.addEventListener('click', () => {
+  ttsEnabled = !ttsEnabled;
+  speakerBtn.style.opacity = ttsEnabled ? '1' : '0.4';
+  if (!ttsEnabled) {
+    window.speechSynthesis?.cancel();
+  }
+});
+
+function updateVoiceQuality(text) {
+  // Rough voice quality estimation from speech features
+  const words = text.split(/\s+/);
+  const pace = Math.min(100, words.length * 15);
+  // Simulated pitch (would need Web Audio API for real analysis)
+  const pitch = 30 + Math.sin(Date.now() * 0.001) * 20 + Math.random() * 20;
+  const volume = 40 + Math.random() * 40;
+
+  pitchBar.style.width = pitch + '%';
+  paceBar.style.width = pace + '%';
+  volumeBar.style.width = volume + '%';
+}
+
+function addTranscript(type, text, speaker) {
+  const line = document.createElement('div');
+  line.className = `transcript-line ${type}`;
+  if (speaker) {
+    line.innerHTML = `<span class="speaker-name">${speaker}</span> ${text}`;
+  } else {
+    line.textContent = text;
+  }
+  transcriptArea.appendChild(line);
+  transcriptArea.scrollTop = transcriptArea.scrollHeight;
+}
+
+function processVoiceInput(text) {
+  const lower = text.toLowerCase();
+  // Check if it's a puppet command
+  const charNames = Object.keys(PuppetSystem.CHARACTERS);
+  const startsWithChar = charNames.some(c => lower.startsWith(c));
+  const isCommand = ['backdrop ', 'prop ', 'warp ', 'ambient ', 'effect ', 'minigame '].some(p => lower.startsWith(p));
+
+  if (startsWithChar || isCommand) {
+    // Execute as puppet command
+    const result = PuppetSystem.executeCommand(text);
+    commandInput.value = '';
+  }
+  // Otherwise it's just dialogue — the transcript records it
+}
+
+// ── Text-to-Speech (TTS) ──
+function speak(text, speakerId) {
+  const speakerName = PuppetSystem.CHARACTERS[speakerId]?.name || 'Agent';
+  addTranscript('agent', text, speakerName);
+
+  if (!ttsEnabled) return;
+
+  // Use Web Speech API for TTS
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Configure voice based on character
+    const voiceConfig = {
+      riker:    { pitch: 0.8, rate: 0.95 },
+      captain:  { pitch: 0.7, rate: 0.85 },
+      deckhand: { pitch: 1.0, rate: 1.0 },
+      cook:     { pitch: 1.1, rate: 0.9 },
+      wesley:   { pitch: 1.4, rate: 1.1 },
+      hermes:   { pitch: 1.2, rate: 1.05 }
+    };
+    const cfg = voiceConfig[speakerId] || { pitch: 1.0, rate: 1.0 };
+    utterance.pitch = cfg.pitch;
+    utterance.rate = cfg.rate;
+
+    window.speechSynthesis.speak(utterance);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// ANNOTATION FEED
+// ════════════════════════════════════════════════════════════
+
+function addAnnotation(entry) {
+  const el = document.createElement('div');
+  el.className = `feed-entry ${entry.type}`;
+  el.innerHTML = `<span class="feed-time">${entry.time}</span>${entry.message}`;
+  annotationFeed.appendChild(el);
+  annotationFeed.scrollTop = annotationFeed.scrollHeight;
+
+  // Limit feed length
+  while (annotationFeed.children.length > 200) {
+    annotationFeed.removeChild(annotationFeed.firstChild);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// STATE TRACKER
+// ════════════════════════════════════════════════════════════
+
+function updateStateTrackerUI(info) {
+  let html = '';
+
+  // Scene
+  html += `<div class="state-section">
+    <div class="state-label">📍 Scene</div>
+    <div class="state-value">${info.backdrop}</div>
+  </div>`;
+
+  // Ambient
+  html += `<div class="state-section">
+    <div class="state-label">🎵 Ambient</div>
+    <div class="state-value">${info.ambient}</div>
+  </div>`;
+
+  // Characters
+  html += `<div class="state-section">
+    <div class="state-label">🎭 Characters (${info.characters.length})</div>`;
+  if (info.characters.length === 0) {
+    html += '<div style="color:#4a3a20;font-size:9px;">No one on stage</div>';
+  } else {
+    info.characters.forEach(c => {
+      html += `<div class="char-badge">${c.name}<br><span class="gesture">${c.gesture} / ${c.emotion}</span></div>`;
+    });
+  }
+  html += '</div>';
+
+  // Props
+  if (info.props.length > 0) {
+    html += `<div class="state-section">
+      <div class="state-label">📦 Props (${info.props.length})</div>`;
+    info.props.forEach(p => {
+      html += `<span class="prop-badge">${p.name}</span>`;
+    });
+    html += '</div>';
+  }
+
+  // Mini-game
+  if (info.minigame) {
+    html += `<div class="state-section">
+      <div class="state-label">🎮 Active Mini-Game</div>
+      <div class="state-value">${info.minigame}</div>
+    </div>`;
+  }
+
+  // Tension
+  html += `<div class="state-section">
+    <div class="state-label">⚡ Tension Level: ${info.tension}%</div>
+    <div id="tension-meter"><div id="tension-fill" style="width:${info.tension}%"></div></div>
+  </div>`;
+
+  stateTracker.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════
+// ASSET QUEUE DISPLAY
+// ════════════════════════════════════════════════════════════
+
+function updateAssetQueue(info) {
+  const s = info.stats;
+  let html = `<div class="queue-stats">
+    Total: ${s.total} | Done: ${s.completed} | Failed: ${s.failed} | Cached: ${s.cached} | Avg: ${Math.round(s.avgTime)}ms
+  </div>`;
+
+  // Active items
+  if (info.active > 0) {
+    html += `<div class="queue-item processing">⚙️ ${info.active} rendering...</div>`;
+  }
+
+  // Queued items
+  if (info.queueLength > 0) {
+    html += `<div class="queue-item">📋 ${info.queueLength} in queue</div>`;
+  }
+
+  // Recent cache entries
+  const cached = AssetRenderer.cache;
+  if (cached.size > 0) {
+    html += `<div style="margin-top:8px;"><div class="state-label">Cached Assets</div>`;
+    let count = 0;
+    for (const [key, value] of cached) {
+      if (count++ > 10) break;
+      const name = key.split(':').slice(1).join('').substring(0, 30);
+      html += `<div style="font-size:8px;color:#4a3a20;margin:2px 0;">📦 ${name}</div>`;
+    }
+    html += '</div>';
+  }
+
+  if (info.queueLength === 0 && info.active === 0) {
+    html += '<div style="color:#3a2a10;font-size:9px;text-align:center;padding:8px;">No assets queued</div>';
+  }
+
+  assetQueueEl.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════
+// DIRECTOR VIEW
+// ════════════════════════════════════════════════════════════
+
+function updateDirectorView(info) {
+  let html = '<div class="state-label">🎭 Puppet Director</div>';
+
+  // All available characters
+  Object.keys(PuppetSystem.CHARACTERS).forEach(id => {
+    const char = PuppetSystem.CHARACTERS[id];
+    const active = info.characters.find(c => c.id === id);
+    const status = active ? `${active.gesture} / ${active.emotion}` : 'off stage';
+    const statusColor = active ? '#4a8a4a' : '#4a3a20';
+
+    html += `<div class="director-puppet">
+      <img class="puppet-icon" src="${char.sprite}" alt="${char.name}" style="opacity:${active ? 1 : 0.3}" />
+      <div class="puppet-info">
+        <div class="puppet-name">${char.name}</div>
+        <div class="puppet-status" style="color:${statusColor}">${status}</div>
+      </div>
+    </div>`;
+  });
+
+  directorView.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════
+// TAB SWITCHING
+// ════════════════════════════════════════════════════════════
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+  });
+});
+
+// ════════════════════════════════════════════════════════════
+// COMMAND INPUT
+// ════════════════════════════════════════════════════════════
+
+commandInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const cmd = commandInput.value.trim();
+    if (cmd) {
+      const result = PuppetSystem.executeCommand(cmd);
+      commandInput.value = '';
+    }
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+// INITIALIZATION
+// ════════════════════════════════════════════════════════════
+
+function init() {
+  // Initialize Puppet System
+  PuppetSystem.init({
+    stage: stageContent,
+    canvas: storyCanvas,
+    ctx: storyCtx,
+    onLog: (entry) => addAnnotation(entry),
+    onStateChange: (info) => {
+      updateStateTrackerUI(info);
+      updateDirectorView(info);
+    },
+    onTTS: (text, speakerId) => speak(text, speakerId),
+    onAssetRequest: (req) => {
+      AssetRenderer.enqueue({
+        type: req.type,
+        prompt: req.prompt,
+        name: req.name,
+        callback: req.callback
+      });
+    },
+    onWarp: (room) => changeRoom(room)
+  });
+
+  // Initialize Asset Renderer
+  AssetRenderer.init({
+    onLog: (entry) => addAnnotation(entry),
+    onAssetReady: (asset) => {
+      addAnnotation({
+        time: new Date().toLocaleTimeString(),
+        message: `🖼 Asset "${asset.name}" ${asset.cached ? '(cached)' : asset.fallback ? '(procedural)' : '(FLUX)'} ready`,
+        type: 'complete'
+      });
+    },
+    onQueueUpdate: (info) => updateAssetQueue(info)
+  });
+
+  // Initialize speech recognition
+  initSpeechRecognition();
+
+  // Load initial room
+  loadRoomBackground('bar-rail');
+
+  // Start animation
+  animate();
+
+  // Clock
+  function updateClock() {
+    const now = new Date();
+    stageLocation.textContent = `◆ ${ROOM_NAMES[currentRoom] || currentRoom} ◆ ${now.toLocaleTimeString()}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Welcome message
+  addAnnotation({
+    time: new Date().toLocaleTimeString(),
+    message: '◆ Story Mode initialized. The stage is set.',
+    type: 'system'
+  });
+  addAnnotation({
+    time: new Date().toLocaleTimeString(),
+    message: 'Puppet commands ready. Try: "riker enter", "riker say \'Hello\'", "backdrop forest"',
+    type: 'system'
+  });
+  addAnnotation({
+    time: new Date().toLocaleTimeString(),
+    message: 'Voice interface ready — click 🎤 to listen, 🔊 for TTS.',
+    type: 'system'
+  });
+
+  // Auto-demo: Riker enters after 2 seconds
+  setTimeout(() => {
+    PuppetSystem.executeCommand('riker enter');
+  }, 2000);
+
+  setTimeout(() => {
+    PuppetSystem.executeCommand("riker say 'Welcome to the Story Mode. I am Riker, your first puppet. The agent can move me, speak through me, and gesture with me. Try commands, or just listen.'");
+  }, 4000);
+}
+
+// Start when page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+// ════════════════════════════════════════════════════════════
+// DEMO SCRIPT — A short automated story sequence
+// ════════════════════════════════════════════════════════════
+
+function runDemoStory() {
+  const script = [
+    "riker gesture wave",
+    "riker say 'Once upon a time, there was a ship that sailed beyond the edge of the map.'",
+    "ambient ocean_calm",
+    "riker gesture nod",
+    "riker say 'The crew thought they knew every star. They were wrong.'",
+    "wesley enter from right",
+    "wesley gesture confused",
+    "wesley say 'Captain? That star... it wasn't there yesterday.'",
+    "effect lightning",
+    "ambient ocean_storm",
+    "riker say 'Then the storm came. Not from the sea — from the sky itself.'",
+    "backdrop storm",
+    "riker gesture point",
+    "riker say 'And the puppets looked up. And they saw us watching.'"
+  ];
+
+  PuppetSystem.executeScript(script, 3000);
+}
+
+// Expose for console access
+window.StoryMode = { runDemoStory, PuppetSystem, AssetRenderer };
+</script>
+
+</body>
+</html>

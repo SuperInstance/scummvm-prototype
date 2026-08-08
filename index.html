@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Plato's Shell — Multi-Room Prototype</title>
+<title>Plato's Shell — Multi-Room Prototype with Radio</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -586,7 +586,8 @@
 <script>
 // ════════════════════════════════════════════════════════════
 // PLATO'S SHELL — Multi-Room ScummVM Prototype
-// Rooms: Bar Rail → Aft Deck → Wheelhouse → Galley
+// Rooms: Bar Rail → Aft Deck → Wheelhouse → Galley → Radio Room
+// Jukebox in bar-rail connects to Radio Room audio system
 // ════════════════════════════════════════════════════════════
 
 const TAP_API = 'https://the-tap.casey-digennaro.workers.dev/api';
@@ -617,10 +618,29 @@ const ROOMS = {
       {id: 'hs-bar-counter', name: 'the bar counter', x: '15%', y: '45%', w: '35%', h: '20%'},
       {id: 'hs-bar-stool', name: 'the bar stool', x: '20%', y: '62%', w: '8%', h: '15%'},
       {id: 'hs-door-aft', name: 'the aft door', x: '82%', y: '20%', w: '12%', h: '50%'},
+      {id: 'hs-door-radio', name: 'the radio room door', x: '5%', y: '15%', w: '10%', h: '55%'},
+      {id: 'hs-jukebox', name: 'the jukebox', x: '68%', y: '45%', w: '10%', h: '30%'},
       {id: 'hs-riker', name: 'Riker', x: '55%', y: '38%', w: '12%', h: '35%'}
     ],
     exits: {
-      'hs-door-aft': {target: 'aft-deck', label: '◆ AFT DECK ◆'}
+      'hs-door-aft': {target: 'aft-deck', label: '◆ AFT DECK ◆'},
+      'hs-door-radio': {target: 'the-radio', label: '◆ RADIO ROOM ◆'}
+    }
+  },
+  'the-radio': {
+    name: 'The Radio Room',
+    shortName: 'Radio Room',
+    palette: 'cyan',
+    hotspots: [
+      {id: 'hs-radio-receiver', name: 'the radio receiver', x: '20%', y: '30%', w: '35%', h: '28%'},
+      {id: 'hs-tape-deck', name: 'the tape deck', x: '55%', y: '35%', w: '25%', h: '23%'},
+      {id: 'hs-chalkboard', name: 'the chalkboard', x: '5%', y: '20%', w: '13%', h: '13%'},
+      {id: 'hs-antenna', name: 'the antenna wire', x: '35%', y: '10%', w: '4%', h: '20%'},
+      {id: 'hs-vu-meter', name: 'the VU meter', x: '84%', y: '38%', w: '8%', h: '6%'},
+      {id: 'hs-door-bar', name: 'the door to the bar', x: '88%', y: '15%', w: '10%', h: '55%'}
+    ],
+    exits: {
+      'hs-door-bar': {target: 'bar-rail', label: '◆ THE TAP ◆'}
     }
   },
   'aft-deck': {
@@ -761,6 +781,7 @@ const ROOM_BG = {
   'aft-deck': 'assets/rooms/aft-deck.jpg',
   'wheelhouse': 'assets/rooms/wheelhouse.jpg',
   'galley': 'assets/rooms/galley.jpg'
+  // 'the-radio': uses canvas-only rendering
 };
 
 const sceneBg = document.getElementById('scene-bg');
@@ -810,6 +831,7 @@ function drawScene() {
     case 'galley': drawGalley(); break;
     case 'engine-room': drawEngineRoom(); break;
     case 'aft-cockpit': drawAftCockpit(); break;
+    case 'the-radio': drawRadioRoom(); break;
   }
 }
 
@@ -1611,9 +1633,319 @@ function drawAftCockpit() {
   ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
 }
 
-// ════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════
 // HOTSPOT MANAGEMENT
-// ════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════
+
+// ── THE RADIO ROOM ──
+function drawRadioRoom() {
+  const C = pal();
+  // Dark bulkhead background
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, 200);
+  bgGrad.addColorStop(0, '#050308'); bgGrad.addColorStop(0.5, '#080610'); bgGrad.addColorStop(1, '#0a0814');
+  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 320, 200);
+  // Wall paneling
+  ctx.strokeStyle = 'rgba(20,10,25,0.5)';
+  for (let x = 0; x < 320; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 130); ctx.stroke(); }
+  for (let y = 0; y < 130; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke(); }
+  // Floor — metal deck plate
+  ctx.fillStyle = '#0a0a14'; ctx.fillRect(0, 130, 320, 70);
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  for (let x = 0; x < 320; x += 12) { ctx.beginPath(); ctx.moveTo(x, 130); ctx.lineTo(x, 200); ctx.stroke(); }
+  for (let y = 135; y < 200; y += 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(320, y); ctx.stroke(); }
+  // Console shelf
+  ctx.fillStyle = '#1a1520'; ctx.fillRect(20, 60, 280, 75);
+  ctx.fillStyle = '#12101a'; ctx.fillRect(24, 64, 272, 67);
+  ctx.fillStyle = '#252030'; ctx.fillRect(20, 60, 280, 3);
+  // Radio receiver
+  const rx = 60, ry = 68, rw = 110, rh = 55;
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(rx, ry, rw, rh);
+  ctx.fillStyle = '#222222'; ctx.fillRect(rx+2, ry+2, rw-4, rh-4);
+  ctx.fillStyle = '#333333'; ctx.fillRect(rx+4, ry+4, rw-8, rh-8);
+  // LCD display
+  const lcdFlicker = Math.sin(candlePhase * 3) * 0.05 + 0.95;
+  ctx.fillStyle = `rgba(10,40,10,${lcdFlicker})`; ctx.fillRect(rx+8, ry+8, 60, 14);
+  ctx.fillStyle = `rgba(68,255,68,${lcdFlicker})`; ctx.font = '7px monospace';
+  ctx.fillText(radioState.freqText, rx+12, ry+18);
+  // Signal bars on LCD
+  for (let i = 0; i < 5; i++) {
+    ctx.fillStyle = i < radioState.signalLevel ? `rgba(68,255,68,${lcdFlicker})` : 'rgba(10,60,10,0.3)';
+    ctx.fillRect(rx+8 + i*4, ry+22, 2, 3);
+  }
+  // Channel knob
+  const knobX = rx + 85, knobY = ry + 25, knobR = 8;
+  ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(knobX, knobY, knobR, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#444444'; ctx.beginPath(); ctx.arc(knobX, knobY, knobR-2, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#888888'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(knobX, knobY);
+  ctx.lineTo(knobX + Math.cos(radioState.knobAngle)*(knobR-3), knobY + Math.sin(radioState.knobAngle)*(knobR-3));
+  ctx.stroke();
+  // Radio LEDs
+  const ledOn = Math.sin(candlePhase * 4) > 0;
+  ctx.fillStyle = ledOn ? '#44ff44' : '#0a2a0a'; ctx.fillRect(rx+10, ry+40, 3, 3);
+  ctx.fillStyle = '#442200'; ctx.fillRect(rx+15, ry+40, 3, 3);
+  ctx.fillStyle = radioState.transmitting ? '#ff4444' : '#440000'; ctx.fillRect(rx+20, ry+40, 3, 3);
+  // Speaker grille
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(rx+30, ry+38, 40, 12);
+  ctx.strokeStyle = 'rgba(60,60,60,0.4)';
+  for (let gx = rx+32; gx < rx+70; gx += 3) { ctx.beginPath(); ctx.moveTo(gx, ry+38); ctx.lineTo(gx, ry+50); ctx.stroke(); }
+  for (let gy = ry+39; gy < ry+50; gy += 3) { ctx.beginPath(); ctx.moveTo(rx+30, gy); ctx.lineTo(rx+70, gy); ctx.stroke(); }
+  // Tape deck
+  const tx2 = 180, ty2 = 70, tw2 = 80, th2 = 45;
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(tx2, ty2, tw2, th2);
+  ctx.fillStyle = '#222'; ctx.fillRect(tx2+2, ty2+2, tw2-4, th2-4);
+  // Tape reels
+  const reelR = 10;
+  const spinA = candlePhase * 4;
+  for (const [rX, rY, dir] of [[tx2+18, ty2+18, 1], [tx2+58, ty2+18, -1]]) {
+    ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.arc(rX, rY, reelR, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#555'; ctx.beginPath(); ctx.arc(rX, rY, reelR-1, 0, Math.PI*2); ctx.stroke();
+    for (let i = 0; i < 6; i++) {
+      const a = spinA * dir + (i / 6) * Math.PI * 2;
+      ctx.strokeStyle = '#444';
+      ctx.beginPath(); ctx.moveTo(rX, rY);
+      ctx.lineTo(rX + Math.cos(a)*(reelR-2), rY + Math.sin(a)*(reelR-2));
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#333'; ctx.beginPath(); ctx.arc(rX, rY, 2, 0, Math.PI*2); ctx.fill();
+  }
+  // Tape between reels
+  ctx.strokeStyle = 'rgba(80,60,30,0.6)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(tx2+27, ty2+18); ctx.lineTo(tx2+48, ty2+18); ctx.stroke();
+  // Tape deck buttons
+  for (let bi = 0; bi < 4; bi++) {
+    const bx = tx2+8 + bi*10;
+    ctx.fillStyle = '#333'; ctx.fillRect(bx, ty2+34, 8, 6);
+    ctx.fillStyle = '#444'; ctx.fillRect(bx+1, ty2+35, 6, 4);
+  }
+  // Chalkboard
+  const cbx = 15, cby = 40;
+  ctx.fillStyle = '#0a0a05'; ctx.fillRect(cbx, cby, 40, 25);
+  ctx.strokeStyle = '#3a3a1a'; ctx.lineWidth = 1; ctx.strokeRect(cbx, cby, 40, 25);
+  ctx.fillStyle = '#aaaa77'; ctx.font = '3px monospace';
+  ctx.fillText('FREQS', cbx+12, cby+5);
+  ctx.fillStyle = '#ddcc88'; ctx.fillText('2182', cbx+3, cby+11);
+  ctx.fillStyle = '#aaaa77'; ctx.fillText('Fleet', cbx+18, cby+11);
+  ctx.fillStyle = '#ddcc88'; ctx.fillText('Ch4', cbx+3, cby+16);
+  ctx.fillStyle = '#aaaa77'; ctx.fillText('Pod', cbx+18, cby+16);
+  ctx.fillStyle = '#ddcc88'; ctx.fillText('Ch7', cbx+3, cby+21);
+  ctx.fillStyle = '#aaaa77'; ctx.fillText('Amb', cbx+18, cby+21);
+  // Antenna wire
+  ctx.strokeStyle = 'rgba(80,80,80,0.4)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(rx+50, ry);
+  for (let y = ry; y > 20; y -= 4) {
+    const wave = Math.sin(candlePhase * 0.5 + y * 0.1) * 1.5;
+    ctx.lineTo(rx + 50 + wave, y);
+  }
+  ctx.stroke();
+  // Antenna tip light
+  const tipBlink = Math.sin(candlePhase * 2) > 0 ? 1 : 0.3;
+  ctx.fillStyle = `rgba(204,68,34,${tipBlink})`; ctx.fillRect(rx+49, 20, 2, 2);
+  // VU meter
+  const vux = 270, vuy = 75, vur = 12;
+  ctx.fillStyle = '#0a0a0a'; ctx.beginPath(); ctx.arc(vux, vuy, vur, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.beginPath(); ctx.arc(vux, vuy, vur-1, 0, Math.PI*2); ctx.stroke();
+  const vuAmp = radioState.playing ? Math.sin(candlePhase * 5) * 0.3 + 0.2 : 0;
+  const vuAngle = -Math.PI * 0.75 + vuAmp * Math.PI * 0.75;
+  ctx.strokeStyle = '#cc4422'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(vux, vuy); ctx.lineTo(vux + Math.cos(vuAngle)*(vur-2), vuy + Math.sin(vuAngle)*(vur-2)); ctx.stroke();
+  // Door to bar (right)
+  ctx.fillStyle = '#1a1208'; ctx.fillRect(285, 15, 35, 115);
+  ctx.fillStyle = '#3d2a14'; ctx.fillRect(289, 19, 27, 107);
+  ctx.fillStyle = '#1a1004'; ctx.fillRect(293, 23, 19, 99);
+  ctx.fillStyle = '#8a6a30'; ctx.fillRect(307, 65, 3, 3);
+  ctx.fillStyle = '#5a3e20'; ctx.font = '5px monospace'; ctx.fillText('BAR', 300, 78);
+  // Tube glow
+  const tubeGlow = (Math.sin(candlePhase) + 1) * 0.5;
+  const tg = ctx.createRadialGradient(280, 90, 5, 280, 90, 40);
+  tg.addColorStop(0, `rgba(255,180,60,${0.04 + tubeGlow * 0.03})`);
+  tg.addColorStop(1, 'rgba(255,120,30,0)');
+  ctx.fillStyle = tg; ctx.fillRect(240, 50, 80, 80);
+  // Now playing overlay (if jukebox is active)
+  if (jukeboxState.nowPlaying) {
+    ctx.fillStyle = 'rgba(10,40,10,0.8)'; ctx.fillRect(60, 100, 200, 12);
+    ctx.fillStyle = '#44ff44'; ctx.font = '5px monospace';
+    const txt = jukeboxState.nowPlaying.substring(0, 38);
+    ctx.fillText(txt, 65, 108);
+  }
+  // Jukebox dial overlay if open
+  if (jukeboxState.isOpen) {
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(0, 0, 320, 200);
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(40, 40, 240, 120);
+    ctx.fillStyle = '#333'; ctx.fillRect(44, 44, 232, 112);
+    ctx.fillStyle = '#44ff44'; ctx.font = '8px monospace';
+    ctx.fillText('◆ JUKEBOX — SELECT FREQUENCY ◆', 70, 58);
+    const channels = [
+      { label: '2182 kHz — Fleet Radio', y: 75 },
+      { label: 'Ch 4   — Podcast Channel', y: 90 },
+      { label: 'Ch 7   — Ambient/Narration', y: 105 },
+      { label: '0000   — Static', y: 120 }
+    ];
+    channels.forEach((ch, i) => {
+      const highlight = jukeboxState.selectedChannel === i;
+      ctx.fillStyle = highlight ? '#e8b840' : '#44aa44';
+      ctx.font = '6px monospace';
+      ctx.fillText((highlight ? '▶ ' : '  ') + ch.label, 60, ch.y);
+    });
+    ctx.fillStyle = '#445544'; ctx.font = '5px monospace';
+    ctx.fillText('Click frequency to tune. ESC to close.', 70, 145);
+    // NPC reaction bubble
+    if (jukeboxState.npcReaction) {
+      ctx.fillStyle = 'rgba(10,7,0,0.9)'; ctx.fillRect(40, 155, 240, 25);
+      ctx.fillStyle = '#c8a050'; ctx.font = '5px monospace';
+      const lines = jukeboxState.npcReaction.match(/.{1,45}/g) || [];
+      lines.forEach((line, i) => ctx.fillText(line, 45, 165 + i * 7));
+    }
+  }
+  // Vignette
+  const vg = ctx.createRadialGradient(160, 90, 40, 160, 120, 180);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.5, 'rgba(0,0,0,0.2)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
+}
+
+// ── Radio Room State (shared with bar-rail jukebox) ──
+const radioState = {
+  freqText: '2182',
+  knobAngle: -Math.PI / 2,
+  signalLevel: 5,
+  transmitting: false,
+  playing: false,
+  currentChannel: '2182',
+  currentTrack: null
+};
+
+const jukeboxState = {
+  isOpen: false,
+  selectedChannel: 0,
+  nowPlaying: null,
+  npcReaction: null,
+  channels: [
+    { id: '2182', label: '2182 kHz — Fleet Radio', freq: '2182' },
+    { id: 'podcast', label: 'Ch 4   — Podcast Channel', freq: 'PODCAST' },
+    { id: 'ambient', label: 'Ch 7   — Ambient/Narration', freq: 'AMBIENT' },
+    { id: 'static', label: '0000   — Static', freq: 'STATIC' }
+  ]
+};
+
+// NPC reaction data for jukebox
+const JUKEBOX_REACTIONS = {
+  '2182': [
+    'Riker nods. "Good tune. I voiced that one myself."',
+    'Riker taps the bar. "Every hook tells a story."',
+    'Riker leans in. "Fleet Radio. Best frequency on the dial."'
+  ],
+  'podcast': [
+    'Riker chuckles. "The bilge pump and the substrate. Classic."',
+    'Riker listens. "Darmok at the noise floor. Temba, his arms wide."',
+    'Riker smiles. "The welder\'s prayer. 0230. That\'s when the real work happens."'
+  ],
+  'ambient': [
+    'Riker closes his eyes. "Room tone. I could listen to this all night."',
+    'Riker breathes deep. "The ocean sounds. Feels like home."'
+  ],
+  'static': [
+    'Riker leans back. "Static. Best station on the dial sometimes."',
+    'Riker stares into the middle distance. "Sometimes I hear old voices in the static."'
+  ]
+};
+
+// Manifest data for jukebox track display
+const RADIO_TRACKS = {
+  '2182': [
+    { title: 'Navigation in the Gap', author: 'Fleet Radio' },
+    { title: 'The Pocket', author: 'Fleet Radio' },
+    { title: 'The Haul', author: 'Fleet Radio' },
+    { title: 'The Excavator\'s Daughter', author: 'Fleet Radio' },
+    { title: 'Plato\'s Shell', author: 'Fleet Radio' }
+  ],
+  'podcast': [
+    { title: 'The Hundred Hooks', author: 'ai-writings' },
+    { title: 'The Bilge Pump and the Substrate', author: 'ai-writings' },
+    { title: 'The Welder\'s Prayer at 0230', author: 'ai-writings' },
+    { title: 'Darmok at the Noise Floor', author: 'ai-writings' }
+  ],
+  'ambient': [
+    { title: 'The Bar Rail (Room Tone)', author: 'Plato\'s Shell' },
+    { title: 'The Aft Deck (Room Tone)', author: 'Plato\'s Shell' },
+    { title: 'The Wheelhouse (Room Tone)', author: 'Plato\'s Shell' },
+    { title: 'The Galley (Room Tone)', author: 'Plato\'s Shell' },
+    { title: 'The Engine Room (Room Tone)', author: 'Plato\'s Shell' }
+  ],
+  'static': []
+};
+
+let jukeboxTrackIndex = 0;
+
+function openJukebox() {
+  jukeboxState.isOpen = true;
+  selectedVerb = null;
+  document.querySelectorAll('.verb-btn').forEach(b => b.classList.remove('selected'));
+  verbLine.textContent = '';
+}
+
+function closeJukebox() {
+  jukeboxState.isOpen = false;
+  jukeboxState.npcReaction = null;
+}
+
+function selectJukeboxChannel(channelIdx) {
+  jukeboxState.selectedChannel = channelIdx;
+  const channel = jukeboxState.channels[channelIdx];
+  const tracks = RADIO_TRACKS[channel.id] || [];
+  
+  radioState.currentChannel = channel.id;
+  radioState.freqText = channel.freq;
+  
+  // Update knob angle
+  const rotations = { '2182': -Math.PI/2, 'podcast': 0, 'ambient': Math.PI/2, 'static': Math.PI };
+  radioState.knobAngle = rotations[channel.id] ?? -Math.PI / 2;
+  radioState.signalLevel = channel.id === 'static' ? 1 : channel.id === 'ambient' ? 3 : 5;
+  radioState.playing = channel.id !== 'static';
+  radioState.transmitting = radioState.playing;
+  
+  if (tracks.length > 0 && channel.id !== 'static') {
+    jukeboxTrackIndex = (jukeboxTrackIndex + 1) % tracks.length;
+    const track = tracks[jukeboxTrackIndex];
+    jukeboxState.nowPlaying = `♪ ${track.title} — ${track.author} ♪`;
+    radioState.currentTrack = track;
+    
+    // Try to play actual audio if available
+    const audioMap = {
+      'podcast': {
+        'The Hundred Hooks': 'podcasts/episode-1-the-hundred-hooks-final.mp3',
+        'The Bilge Pump and the Substrate': 'podcasts/episode-2-the-bilge-pump-and-the-substrate-final.mp3',
+        'The Welder\'s Prayer at 0230': 'podcasts/episode-3-the-welders-prayer-at-0230-final.mp3',
+        'Darmok at the Noise Floor': 'podcasts/episode-4-darmok-at-the-noise-floor-final.mp3'
+      }
+    };
+    if (audioMap[channel.id] && audioMap[channel.id][track.title]) {
+      // Try playing from ai-writings (may fail due to CORS/path)
+      const narrationAudio = document.getElementById('audio-narration');
+      narrationAudio.src = '../ai-writings/' + audioMap[channel.id][track.title];
+      narrationAudio.volume = 0.6;
+      narrationAudio.play().catch(() => {});
+    }
+  } else {
+    jukeboxState.nowPlaying = '~ ~ static ~ ~';
+    radioState.currentTrack = null;
+    const narrationAudio = document.getElementById('audio-narration');
+    narrationAudio.pause();
+  }
+  
+  // NPC reaction after a beat
+  setTimeout(() => {
+    const reactions = JUKEBOX_REACTIONS[channel.id] || JUKEBOX_REACTIONS['static'];
+    jukeboxState.npcReaction = reactions[Math.floor(Math.random() * reactions.length)];
+    // Also show as ambient bubble
+    if (jukeboxState.npcReaction) {
+      showAmbientBubble({ display_name: '', content: jukeboxState.npcReaction });
+    }
+  }, 1500);
+}
+
+// ═════════════════════════════════════════════════════════════
+// HOTSPOT MANAGEMENT (original, continues below)
+// ═════════════════════════════════════════════════════════════
 
 const hotspotsLayer = document.getElementById('hotspots-layer');
 

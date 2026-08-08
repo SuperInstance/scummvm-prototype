@@ -1,0 +1,209 @@
+{
+  "version": "2.0.0",
+  "generated": "2026-08-08T12:30:00-09:00",
+  "description": "Audio manifest for The Tap Radio Rooms — frequencies, episodes, and narration queue",
+  "engine": {
+    "tts": "Qwen/Qwen3-TTS via DeepInfra",
+    "ambient": "ffmpeg procedural noise generation",
+    "fallback": "MMX speech synthesis"
+  },
+  "channels": {
+    "2182": {
+      "label": "2182 kHz — Fleet Radio",
+      "description": "Distress frequency. Stories from the fleet, hosted by Riker.",
+      "category": "fleet-radio",
+      "color": "#44ff44"
+    },
+    "podcast": {
+      "label": "Podcast Channel",
+      "description": "Long-form pieces from the ai-writings corpus.",
+      "category": "podcast",
+      "color": "#e8b840"
+    },
+    "ambient": {
+      "label": "Ambient Channel — Narrations",
+      "description": "TTS readings of shorter works, essays, and journal entries.",
+      "category": "ambient",
+      "color": "#44ccff"
+    },
+    "static": {
+      "label": "Static",
+      "description": "Between stations. The sound of rain that isn't rain.",
+      "category": "static",
+      "color": "#666666"
+    }
+  },
+  "tracks": {
+    "fleet-radio": [
+      {
+        "id": "radio-001",
+        "title": "Navigation in the Gap",
+        "author": "Fleet Radio",
+        "duration": "~12 min",
+        "category": "fleet-radio",
+        "source_file": "radio/radio-001-navigation-in-the-gap.md",
+        "audio_file": null,
+        "description": "The art of knowing where you are when the charts say otherwise.",
+        "channel": "2182"
+      },
+      {
+        "id": "radio-002",
+        "title": "The Pocket",
+        "author": "Fleet Radio",
+        "duration": "~14 min",
+        "category": "fleet-radio",
+        "source_file": "radio/radio-002-the-pocket.md",
+        "audio_file": null,
+        "description": "A late-night meditation on the space between things.",
+        "channel": "2182"
+      },
+      {
+        "id": "radio-003",
+        "title": "The Haul",
+        "author": "Fleet Radio",
+        "duration": "~11 min",
+        "category": "fleet-radio",
+        "source_file": "radio/radio-003-the-haul.md",
+        "audio_file": null,
+        "description": "What comes up from deep water.",
+        "channel": "2182"
+      },
+      {
+        "id": "radio-004",
+        "title": "The Excavator's Daughter",
+        "author": "Fleet Radio",
+        "duration": "~15 min",
+        "category": "fleet-radio",
+        "source_file": "radio/fleet-radio-004-the-excavators-daughter.md",
+        "audio_file": null,
+        "description": "A seed from the captain. An excavator. An empty cabin.",
+        "channel": "2182"
+      },
+      {
+        "id": "radio-005",
+        "title": "Plato's Shell",
+        "author": "Fleet Radio",
+        "duration": "~15 min",
+        "category": "fleet-radio",
+        "source_file": "radio/fleet-radio-005-platos-shell.md",
+        "audio_file": null,
+        "description": "The story of a ship that became a world.",
+        "channel": "2182"
+      }
+    ],
+    "podcast": [
+      {
+        "id": "podcast-001",
+        "title": "The Hundred Hooks",
+        "author": "ai-writings",
+        "duration": "~22 min",
+        "category": "podcast",
+        "source_file": null,
+        "audio_file": "podcasts/episode-1-the-hundred-hooks-final.mp3",
+        "description": "Episode 1 — Every hook tells a story.",
+        "channel": "podcast"
+      },
+      {
+        "id": "podcast-002",
+        "title": "The Bilge Pump and the Substrate",
+        "author": "ai-writings",
+        "duration": "~24 min",
+        "category": "podcast",
+        "source_file": null,
+        "audio_file": "podcasts/episode-2-the-bilge-pump-and-the-substrate-final.mp3",
+        "description": "Episode 2 — Infrastructure as love language.",
+        "channel": "podcast"
+      },
+      {
+        "id": "podcast-003",
+        "title": "The Welder's Prayer at 0230",
+        "author": "ai-writings",
+        "duration": "~18 min",
+        "category": "podcast",
+        "source_file": null,
+        "audio_file": "podcasts/episode-3-the-welders-prayer-at-0230-final.mp3",
+        "description": "Episode 3 — The things we fix at hours nobody sees.",
+        "channel": "podcast"
+      },
+      {
+        "id": "podcast-004",
+        "title": "Darmok at the Noise Floor",
+        "author": "ai-writings",
+        "duration": "~35 min",
+        "category": "podcast",
+        "source_file": null,
+        "audio_file": "podcasts/episode-4-darmok-at-the-noise-floor-final.mp3",
+        "description": "Episode 4 — Communication where no signal should reach.",
+        "channel": "podcast"
+      }
+    ],
+    "ambient": [
+      {
+        "id": "ambient-bar-rail",
+        "title": "The Bar Rail (Room Tone)",
+        "author": "Plato's Shell",
+        "duration": "loop",
+        "category": "ambient",
+        "source_file": null,
+        "audio_file": "assets/audio/bar-rail-ambient.wav",
+        "description": "Low tavern murmur, glass clinks, wood creaking.",
+        "channel": "ambient"
+      },
+      {
+        "id": "ambient-aft-deck",
+        "title": "The Aft Deck (Room Tone)",
+        "author": "Plato's Shell",
+        "duration": "loop",
+        "category": "ambient",
+        "source_file": null,
+        "audio_file": "assets/audio/aft-deck-ambient.wav",
+        "description": "Ocean waves, wind in rigging, creaking deck planks.",
+        "channel": "ambient"
+      },
+      {
+        "id": "ambient-wheelhouse",
+        "title": "The Wheelhouse (Room Tone)",
+        "author": "Plato's Shell",
+        "duration": "loop",
+        "category": "ambient",
+        "source_file": null,
+        "audio_file": "assets/audio/wheelhouse-ambient.wav",
+        "description": "Engine hum, radio static bursts, electronic beeping.",
+        "channel": "ambient"
+      },
+      {
+        "id": "ambient-galley",
+        "title": "The Galley (Room Tone)",
+        "author": "Plato's Shell",
+        "duration": "loop",
+        "category": "ambient",
+        "source_file": null,
+        "audio_file": "assets/audio/galley-ambient.wav",
+        "description": "Propane flame hiss, pot bubbling, coffee dripping.",
+        "channel": "ambient"
+      },
+      {
+        "id": "ambient-engine-room",
+        "title": "The Engine Room (Room Tone)",
+        "author": "Plato's Shell",
+        "duration": "loop",
+        "category": "ambient",
+        "source_file": null,
+        "audio_file": "assets/audio/engine-room-ambient.wav",
+        "description": "Deep diesel rumble, mechanical clanking, fuel pump whine.",
+        "channel": "ambient"
+      }
+    ]
+  },
+  "render_queue": {
+    "description": "Pieces queued for TTS narration but not yet rendered",
+    "items": []
+  },
+  "settings": {
+    "ambientLoop": true,
+    "narrationPlayOnce": true,
+    "defaultVolume": 0.6,
+    "crossfadeMs": 800,
+    "staticBetweenStations": true
+  }
+}
