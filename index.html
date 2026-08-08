@@ -2651,6 +2651,30 @@ function handleHotspotClick(hsId) {
 }
 
 // ════════════════════════════════════════════════════════════
+// CHESS MINI-GAME OVERLAY
+// ════════════════════════════════════════════════════════════
+
+function openChess() {
+  const overlay = document.getElementById('chess-overlay');
+  const iframe = document.getElementById('chess-iframe');
+  iframe.src = 'chess.html';
+  overlay.style.display = 'flex';
+}
+
+function closeChess() {
+  const overlay = document.getElementById('chess-overlay');
+  overlay.style.display = 'none';
+  document.getElementById('chess-iframe').src = '';
+}
+
+// Listen for close message from chess iframe
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'close-chess') {
+    closeChess();
+  }
+});
+
+// ════════════════════════════════════════════════════════════
 // RESPONSE BOX
 // ════════════════════════════════════════════════════════════
 
