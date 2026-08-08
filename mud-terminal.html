@@ -928,10 +928,10 @@ window.addEventListener('storage', (e) => {
 
 // ── Boot ──
 window.addEventListener('load', () => {
-  // Initialize world state if not set
+  // Initialize world state if not set or invalid
   let state = getWorldState();
-  if (!state.currentRoom) {
-    state = { currentRoom: 'bar-rail', inventory: [] };
+  if (!state.currentRoom || !ROOMS[state.currentRoom]) {
+    state = { currentRoom: 'bar-rail', inventory: state.inventory || [] };
     setWorldState(state);
   }
   renderRoom();

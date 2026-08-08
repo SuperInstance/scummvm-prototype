@@ -3166,6 +3166,16 @@ window.addEventListener('load', () => {
   // Start audio for initial room (after the load sequence)
   setTimeout(() => playRoomAudio(currentRoom), 1600);
   
+  // Audio resume on first user interaction (browsers block autoplay)
+  let audioPrimed = false;
+  function primeAudio() {
+    if (audioPrimed) return;
+    audioPrimed = true;
+    playRoomAudio(currentRoom);
+  }
+  document.addEventListener('click', primeAudio, { once: true });
+  document.addEventListener('keydown', primeAudio, { once: true });
+  
   // Audio controls
   const audioToggle = document.getElementById('audio-toggle');
   const audioVolume = document.getElementById('audio-volume');

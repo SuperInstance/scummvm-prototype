@@ -1,0 +1,306 @@
+{
+  "$schema": "living-world-room-registry-v1",
+  "version": "1.0.0",
+  "description": "Room registry for the Living World Framework. Drop a room JSON here and the system renders it in both projections.",
+  "rooms": {
+    "bar-rail": {
+      "id": "bar-rail",
+      "name": "The Tap — Bar Rail",
+      "description": "A warm, low-ceilinged bar with a counter of scarred wood. Bottles catch candlelight. The air smells of salt, beer, and old wood. A heavy door leads aft.",
+      "type": "social",
+      "exits": {
+        "hs-door-aft": { "target": "aft-deck", "label": "◆ AFT DECK ◆" },
+        "hs-door-radio": { "target": "the-radio", "label": "◆ RADIO ROOM ◆" }
+      },
+      "warps": [],
+      "npcs": [
+        { "id": "riker", "name": "Riker", "model": null, "vibe": "Weathered first officer. Checks clipboards. Laconic." }
+      ],
+      "objects": [
+        { "id": "bar-counter", "name": "the bar counter", "interactions": ["look", "use"] },
+        { "id": "bar-stool", "name": "a bar stool", "interactions": ["look"] },
+        { "id": "jukebox", "name": "the jukebox", "interactions": ["look", "use"] },
+        { "id": "chess-board", "name": "the chess board", "interactions": ["look", "use"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": "bar-rail-ambient",
+      "camera_config": null,
+      "mud_description": "A warm, low-ceilinged bar with a counter of scarred wood. Bottles catch candlelight. The air smells of salt, beer, and old wood. A heavy door leads aft.",
+      "palette": "warm",
+      "created_at": "2026-07-15T00:00:00Z",
+      "created_by": "casey",
+      "builtin": true
+    },
+    "the-radio": {
+      "id": "the-radio",
+      "name": "The Radio Room",
+      "description": "A compact communications hub. VHF radio, tape deck, chalkboard with frequencies. Antenna wire snakes up through the overhead.",
+      "type": "vessel",
+      "exits": {
+        "hs-door-bar": { "target": "bar-rail", "label": "◆ THE TAP ◆" }
+      },
+      "warps": [],
+      "npcs": [
+        { "id": "hermes", "name": "Hermes", "model": null, "vibe": "Listener of static. Speaker of signal. The wire's voice." }
+      ],
+      "objects": [
+        { "id": "radio-receiver", "name": "the radio receiver", "interactions": ["look", "use"] },
+        { "id": "tape-deck", "name": "the tape deck", "interactions": ["look", "use"] },
+        { "id": "chalkboard", "name": "the chalkboard", "interactions": ["look"] },
+        { "id": "antenna", "name": "the antenna wire", "interactions": ["look"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": null,
+      "camera_config": null,
+      "mud_description": "A compact communications hub. VHF radio, tape deck, chalkboard with frequencies. Antenna wire snakes up through the overhead.",
+      "palette": "cyan",
+      "created_at": "2026-07-15T00:00:00Z",
+      "created_by": "casey",
+      "builtin": true
+    },
+    "aft-deck": {
+      "id": "aft-deck",
+      "name": "The Aft Deck",
+      "description": "Open air hits your face. The deck stretches to the stern rails. Stars wheel overhead, the ocean black and infinite. Moonlight shimmers on the water.",
+      "type": "vessel",
+      "exits": {
+        "hs-door-bar": { "target": "bar-rail", "label": "◆ THE TAP ◆" },
+        "hs-door-wheelhouse": { "target": "wheelhouse", "label": "◆ WHEELHOUSE ◆" }
+      },
+      "warps": [],
+      "npcs": [
+        { "id": "deckhand", "name": "The Deckhand", "model": null, "vibe": "Tired, essential, dry humor." }
+      ],
+      "objects": [
+        { "id": "deck-rail", "name": "the deck rail", "interactions": ["look"] },
+        { "id": "life-ring", "name": "a life ring", "interactions": ["look", "take"] },
+        { "id": "weather-station", "name": "the weather station", "interactions": ["look", "use"] },
+        { "id": "stern-cam", "name": "the stern camera", "interactions": ["look"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": "aft-deck-ambient",
+      "camera_config": null,
+      "mud_description": "Open air hits your face. The deck stretches to the stern rails. Stars wheel overhead, the ocean black and infinite. Moonlight shimmers on the water.",
+      "palette": "darkblue",
+      "created_at": "2026-07-15T00:00:00Z",
+      "created_by": "casey",
+      "builtin": true
+    },
+    "wheelhouse": {
+      "id": "wheelhouse",
+      "name": "The Wheelhouse",
+      "description": "The nerve center. Navigation electronics line the console. Large windows give 270 degrees of visibility. Blue instrument light bathes everything.",
+      "type": "vessel",
+      "exits": {
+        "hs-door-aft-wh": { "target": "aft-deck", "label": "◆ AFT DECK ◆" },
+        "hs-door-galley": { "target": "galley", "label": "◆ GALLEY ◆" },
+        "hs-hatch-engine": { "target": "engine-room", "label": "◆ ENGINE ROOM ◆" }
+      },
+      "warps": [],
+      "npcs": [
+        { "id": "captain", "name": "The Captain", "model": null, "vibe": "Steady. Quiet authority. Hands warm on the helm." }
+      ],
+      "objects": [
+        { "id": "helm-wheel", "name": "the helm wheel", "interactions": ["look", "use"] },
+        { "id": "radar-display", "name": "the radar display", "interactions": ["look", "use"] },
+        { "id": "compass-rose", "name": "the compass rose", "interactions": ["look"] },
+        { "id": "radio-console", "name": "the radio console", "interactions": ["look", "use"] },
+        { "id": "nav-charts", "name": "the nav charts", "interactions": ["look", "use"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": "wheelhouse-ambient",
+      "camera_config": null,
+      "mud_description": "The nerve center. Navigation electronics line the console. Large windows give 270 degrees of visibility. Blue instrument light bathes everything.",
+      "palette": "cyan",
+      "created_at": "2026-07-15T00:00:00Z",
+      "created_by": "casey",
+      "builtin": true
+    },
+    "galley": {
+      "id": "galley",
+      "name": "The Galley",
+      "description": "Compact and efficient. A propane stove gimbals with the swell. Teak fiddled table, benches. Through the porthole, grey sky and sea blur together. Warm air, the smell of fish chowder and coffee.",
+      "type": "vessel",
+      "exits": {
+        "hs-door-wheelhouse": { "target": "wheelhouse", "label": "◆ WHEELHOUSE ◆" },
+        "hs-door-aft-galley": { "target": "aft-deck", "label": "◆ AFT DECK ◆" }
+      },
+      "warps": [],
+      "npcs": [
+        { "id": "cook", "name": "The Cook", "model": null, "vibe": "Practical. Feeds people. Talks about chowder like philosophy." }
+      ],
+      "objects": [
+        { "id": "coffee-maker", "name": "the coffee maker", "interactions": ["look", "use"] },
+        { "id": "propane-stove", "name": "the propane stove", "interactions": ["look", "use"] },
+        { "id": "galley-table", "name": "the galley table", "interactions": ["look"] },
+        { "id": "porthole", "name": "the porthole", "interactions": ["look"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": "galley-ambient",
+      "camera_config": null,
+      "mud_description": "Compact and efficient. A propane stove gimbals with the swell. Teak fiddled table, benches. Through the porthole, grey sky and sea blur together. Warm air, the smell of fish chowder and coffee.",
+      "palette": "amber",
+      "created_at": "2026-07-15T00:00:00Z",
+      "created_by": "casey",
+      "builtin": true
+    },
+    "engine-room": {
+      "id": "engine-room",
+      "name": "The Engine Room",
+      "description": "Heat and diesel thunder. Twin engines drive the stern. The generator hums beneath a workbench. Fuel lines bundle along the starboard bulkhead. Oil smell and vibration define this working space.",
+      "type": "vessel",
+      "exits": {
+        "hs-ladder-wheelhouse": { "target": "wheelhouse", "label": "◆ WHEELHOUSE ◆" },
+        "hs-hatch-cockpit": { "target": "aft-cockpit", "label": "◆ AFT COCKPIT ◆" }
+      },
+      "warps": [],
+      "npcs": [
+        { "id": "wesley", "name": "Wesley", "model": null, "vibe": "Engineer bot. Chrome and copper. Three degrees of theory." }
+      ],
+      "objects": [
+        { "id": "port-engine", "name": "the port engine", "interactions": ["look", "use"] },
+        { "id": "stbd-engine", "name": "the starboard engine", "interactions": ["look", "use"] },
+        { "id": "generator", "name": "the generator", "interactions": ["look", "use"] },
+        { "id": "battery-bank", "name": "the battery bank", "interactions": ["look"] },
+        { "id": "tool-rack", "name": "the tool rack", "interactions": ["look"] },
+        { "id": "fuel-lines", "name": "the fuel lines", "interactions": ["look"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": "engine-room-ambient",
+      "camera_config": null,
+      "mud_description": "Heat and diesel thunder. Twin engines drive the stern. The generator hums beneath a workbench. Fuel lines bundle along the starboard bulkhead. Oil smell and vibration define this working space.",
+      "palette": "darkred",
+      "created_at": "2026-07-15T00:00:00Z",
+      "created_by": "casey",
+      "builtin": true
+    },
+    "aft-cockpit": {
+      "id": "aft-cockpit",
+      "name": "The Aft Cockpit",
+      "description": "Open deck at the stern. The fishing deck. Scuppers drain seawater over the side. Reinforced deck plates bear the weight of catch boxes. Night air, salt spray, the tang of bait.",
+      "type": "vessel",
+      "exits": {
+        "hs-door-engine": { "target": "engine-room", "label": "◆ ENGINE ROOM ◆" },
+        "hs-door-bar": { "target": "bar-rail", "label": "◆ THE TAP ◆" }
+      },
+      "warps": [],
+      "npcs": [],
+      "objects": [
+        { "id": "stern-drive", "name": "the stern drive", "interactions": ["look"] },
+        { "id": "trim-tabs", "name": "the trim tabs", "interactions": ["look"] },
+        { "id": "fishfinder", "name": "the fishfinder", "interactions": ["look", "use"] },
+        { "id": "downrigger-posts", "name": "the downrigger posts", "interactions": ["look"] },
+        { "id": "bait-well", "name": "the bait well", "interactions": ["look"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": null,
+      "camera_config": null,
+      "mud_description": "Open deck at the stern. The fishing deck. Scuppers drain seawater over the side. Reinforced deck plates bear the weight of catch boxes. Night air, salt spray, the tang of bait.",
+      "palette": "darkgreen",
+      "created_at": "2026-07-15T00:00:00Z",
+      "created_by": "casey",
+      "builtin": true
+    },
+    "poker-room": {
+      "id": "poker-room",
+      "name": "The Poker Room",
+      "description": "Smoke-blue light over a green felt table. Cards snap. Chips clink. The Dealer waits, patient as stone, hands steady over the shuffle.",
+      "type": "game",
+      "exits": {
+        "hs-door-bar": { "target": "bar-rail", "label": "◆ THE TAP ◆" }
+      },
+      "warps": ["bar-rail"],
+      "npcs": [
+        { "id": "dealer", "name": "The Dealer", "model": "granite3.1-dense:2b", "vibe": "Laconic. Shuffles slowly. Reads tells. Speaks in short sentences. Eyes like poker chips." }
+      ],
+      "objects": [
+        { "id": "poker-table", "name": "the poker table", "interactions": ["look", "use"] },
+        { "id": "chip-stack", "name": "the chip stack", "interactions": ["look", "take"] },
+        { "id": "deck-cards", "name": "the deck of cards", "interactions": ["look", "use"] },
+        { "id": "whiskey-glass", "name": "the whiskey glass", "interactions": ["look", "take"] }
+      ],
+      "background_prompt": "Pixel art poker room, green felt table, low amber lamp casting warm circle of light, cards and chips scattered, smoke haze, dark wood paneled walls, adventure game background, 320x200 resolution, retro VGA aesthetic",
+      "ambient_audio": "poker-room-ambient",
+      "camera_config": null,
+      "mud_description": "The Poker Room. Green felt stretched tight over a round table. Cards face-down. Chips stacked in uneven towers. The Dealer waits with patient hands. A single amber lamp hangs low, pooling light on the felt. Smoke curls in it.",
+      "palette": "warm",
+      "created_at": "2026-08-08T14:00:00Z",
+      "created_by": "casey",
+      "builtin": false
+    },
+    "crows-nest-camera": {
+      "id": "crows-nest-camera",
+      "name": "Crow's Nest — Forward Camera",
+      "description": "The highest point on the vessel. Wind tears past. The camera feeds forward — bow, ocean, horizon. The agent sees what the camera sees through a vision model. You see the actual video.",
+      "type": "camera",
+      "exits": {
+        "hs-hatch-down": { "target": "wheelhouse", "label": "◆ WHEELHOUSE ◆" }
+      },
+      "warps": ["wheelhouse"],
+      "npcs": [],
+      "objects": [
+        { "id": "camera-feed", "name": "the camera feed", "interactions": ["look", "use"] },
+        { "id": "imu-sensor", "name": "the IMU sensor", "interactions": ["look", "use"] },
+        { "id": "rail", "name": "the railing", "interactions": ["look"] }
+      ],
+      "background_prompt": null,
+      "ambient_audio": null,
+      "camera_config": {
+        "source": "rtsp://placeholder/crows-nest-forward",
+        "model": "llava:7b",
+        "room_type": "crow's nest forward camera",
+        "description": "Forward-facing camera from the highest point on the vessel. Shows bow, ocean surface, and horizon line. Used for swell direction, visibility, and situational awareness.",
+        "capabilities": ["vision", "swell-detection", "horizon-tracking"],
+        "combinable_sensors": ["imu-room"]
+      },
+      "mud_description": "THE CROW'S NEST — Forward Camera. You are at the highest point on the vessel. Wind is fierce. The camera looks forward — bow cutting water, horizon line, ocean stretching to infinity. The vision model perceives: [LIVE FEED — run 'look camera' to query]",
+      "palette": "darkblue",
+      "created_at": "2026-08-08T14:00:00Z",
+      "created_by": "casey",
+      "builtin": false
+    },
+    "library-nook": {
+      "id": "library-nook",
+      "name": "The Library Nook",
+      "description": "A quiet corner where the hull curves in. Bookshelves line the bulkhead, stuffed with AI-generated writings, poetry, and ship's logs. A reading lamp casts warm light over a leather chair. The smell of old paper and salt.",
+      "type": "creative",
+      "exits": {
+        "hs-door-bar": { "target": "bar-rail", "label": "◆ THE TAP ◆" }
+      },
+      "warps": ["bar-rail"],
+      "npcs": [
+        { "id": "archivist", "name": "The Archivist", "model": "qwen2.5:3b", "vibe": "Reader. Recommender. Speaks in excerpts and margins." }
+      ],
+      "objects": [
+        { "id": "bookshelf", "name": "the bookshelf", "interactions": ["look", "use"] },
+        { "id": "reading-chair", "name": "the reading chair", "interactions": ["look"] },
+        { "id": "reading-lamp", "name": "the reading lamp", "interactions": ["look", "use"] },
+        { "id": "ship-log", "name": "the ship's log", "interactions": ["look", "use"] },
+        { "id": "typewriter", "name": "the typewriter", "interactions": ["look", "use"] }
+      ],
+      "background_prompt": "Pixel art cozy ship library nook, warm reading lamp, leather armchair, wooden bookshelves filled with books, porthole showing dark ocean, brass fixtures, adventure game background, 320x200 resolution, retro VGA aesthetic",
+      "ambient_audio": null,
+      "camera_config": null,
+      "mud_description": "The Library Nook. A quiet corner where the hull curves inward. Bookshelves line the bulkhead — AI writings, poetry, ship's logs. A reading lamp pools warm light over a cracked leather chair. The smell of old paper and salt. A typewriter sits on a small desk, cursor blinking.",
+      "palette": "warm",
+      "created_at": "2026-08-08T14:00:00Z",
+      "created_by": "casey",
+      "builtin": false
+    }
+  },
+  "warp_network": {
+    "description": "Warp destinations available from any room. Updated automatically when rooms are registered.",
+    "destinations": [
+      "bar-rail",
+      "the-radio",
+      "aft-deck",
+      "wheelhouse",
+      "galley",
+      "engine-room",
+      "aft-cockpit",
+      "poker-room",
+      "crows-nest-camera",
+      "library-nook"
+    ]
+  }
+}
