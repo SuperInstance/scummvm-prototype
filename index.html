@@ -1296,6 +1296,27 @@ function transitionToRoom(targetRoom, label) {
     currentRoom = targetRoom;
     loadHotspots();
     updateLocationIndicator();
+
+    // ── Sync: notify parent split-view of room change ──
+    const WORLD_KEY = 'platos-shell-world';
+    try {
+      const s = localStorage.getItem(WORLD_KEY);
+      const state = s ? JSON.parse(s) : { currentRoom: 'bar-rail', inventory: [] };
+      if (state.currentRoom !== currentRoom) {
+        state.currentRoom = currentRoom;
+        state.inventory = inventory.map(i => {
+          if (i.id === 'life_ring') return { id: 'life-ring', name: i.name };
+          return i;
+        });
+        localStorage.setItem(WORLD_KEY, JSON.stringify(state));
+      }
+    } catch(e) {}
+
+    // Also dispatch postMessage for robustness (works even if localStorage is blocked)
+    try {
+      window.parent.postMessage({ type: 'room-change', room: currentRoom }, '*');
+    } catch(e) {}
+
     document.getElementById('dialogue-panel').classList.remove('visible');
     setTimeout(() => {
       rt.classList.remove('visible');

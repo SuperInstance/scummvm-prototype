@@ -291,9 +291,12 @@ const ROOMS = {
     description: 'Open air hits your face. The deck stretches to the stern rails. Stars wheel overhead, the ocean black and infinite. Moonlight shimmers on the water. Doors lead to the bar (west), the wheelhouse (forward and up), and the engine room (below).',
     exits: {
       west: { target: 'bar-rail', label: 'THE TAP' },
-      forward: { target: 'bar-rail', label: 'THE TAP' },
-      forward_up: { target: 'wheelhouse', label: 'WHEELHOUSE' },
-      below: { target: 'engine-room', label: 'ENGINE ROOM' }
+      bar: { target: 'bar-rail', label: 'THE TAP' },
+      forward: { target: 'wheelhouse', label: 'WHEELHOUSE' },
+      up: { target: 'wheelhouse', label: 'WHEELHOUSE' },
+      wheelhouse: { target: 'wheelhouse', label: 'WHEELHOUSE' },
+      below: { target: 'engine-room', label: 'ENGINE ROOM' },
+      engine: { target: 'engine-room', label: 'ENGINE ROOM' }
     },
     objects: [
       { id: 'deck-rail', name: 'the deck rail', desc: 'Salt-crusted and solid. The ocean stretches to the horizon.' },
@@ -503,6 +506,7 @@ function goToRoom(targetRoom, direction) {
   state.currentRoom = targetRoom;
   setWorldState(state);
 
+  // Force re-render regardless of current state
   setTimeout(() => {
     renderRoom();
   }, 300);
@@ -830,16 +834,37 @@ input.addEventListener('keydown', (e) => {
   }
 });
 
-// ── Listen for world updates from split-view ──
+// ── Listen for world updates from split-view (custom event) ──
 window.addEventListener('world-update', (e) => {
   // Re-render if room changed
-  const state = getWorldState();
+  const state = e.detail || getWorldState();
   const currentRendered = terminal.querySelector('.room-name');
   if (currentRendered) {
-    const renderedName = currentRendered.textContent.replace('📍 ', '');
+    const renderedName = currentRendered.textContent.replace(/📍\s*/, '').trim();
     const newStateRoom = ROOMS[state.currentRoom]?.name.toUpperCase();
-    if (renderedName !== newStateRoom) {
+    if (newStateRoom && renderedName !== newStateRoom) {
       println('◆ Scene transition detected. Updating...', 'command-output system');
+      setTimeout(() => renderRoom(), 200);
+    }
+  } else {
+    // No rendered room yet — just render
+    setTimeout(() => renderRoom(), 200);
+  }
+});
+
+// ── Listen for storage events (fires when another frame writes localStorage) ──
+window.addEventListener('storage', (e) => {
+  if (e.key === WORLD_KEY) {
+    const state = getWorldState();
+    const currentRendered = terminal.querySelector('.room-name');
+    if (currentRendered) {
+      const renderedName = currentRendered.textContent.replace(/📍\s*/, '').trim();
+      const newStateRoom = ROOMS[state.currentRoom]?.name.toUpperCase();
+      if (newStateRoom && renderedName !== newStateRoom) {
+        println('◆ Scene transition detected. Updating...', 'command-output system');
+        setTimeout(() => renderRoom(), 200);
+      }
+    } else {
       setTimeout(() => renderRoom(), 200);
     }
   }

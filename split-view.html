@@ -229,6 +229,12 @@
 const WORLD_KEY = 'platos-shell-world';
 const ROOM_DISPLAY = document.getElementById('current-room-display');
 
+// ── Anti-loop cooldown ──
+// When we initiate a room change from one side, set this timestamp.
+// The poller ignores ScummVM room changes for this duration.
+let lastSyncInitiated = 0;
+const SYNC_COOLDOWN_MS = 1500; // 1.5s cooldown to cover transition animation
+
 const ROOM_NAMES = {
   'bar-rail': 'The Tap — Bar Rail',
   'aft-deck': 'The Aft Deck',
@@ -261,17 +267,39 @@ function updateRoomDisplay() {
 }
 
 // ── Cross-frame sync via storage events ──
+// storage fires in OTHER windows when localStorage changes.
+// When MUD iframe writes to localStorage, it fires here in the parent.
 window.addEventListener('storage', (e) => {
   if (e.key === WORLD_KEY) {
     updateRoomDisplay();
-    syncScummFrame();
+    // Don't sync ScummVM here if the change originated from ScummVM
+    const now = Date.now();
+    if (now - lastSyncInitiated > SYNC_COOLDOWN_MS) {
+      syncScummFrame();
+    }
   }
 });
 
-// ── Custom event from MUD terminal (same window) ──
-window.addEventListener('world-update', (e) => {
-  updateRoomDisplay();
-  syncScummFrame();
+// ── postMessage listener for ScummVM room changes ──
+// The ScummVM iframe sends a postMessage when it transitions rooms
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'room-change') {
+    const newRoom = e.data.room;
+    const state = getWorldState();
+    const mappedMud = reverseMapRoom(newRoom);
+    if (mappedMud && state.currentRoom !== mappedMud) {
+      // ScummVM initiated the room change
+      lastSyncInitiated = Date.now();
+      state.currentRoom = mappedMud;
+      try { localStorage.setItem(WORLD_KEY, JSON.stringify(state)); } catch(e) {}
+      updateRoomDisplay();
+      // Notify MUD terminal to re-render
+      const mudFrame = document.getElementById('mud-terminal-frame');
+      if (mudFrame.contentWindow) {
+        mudFrame.contentWindow.dispatchEvent(new CustomEvent('world-update', { detail: state }));
+      }
+    }
+  }
 });
 
 // ── Sync ScummVM iframe to match MUD room ──
@@ -282,20 +310,24 @@ function syncScummFrame() {
   try {
     const scummWindow = scummFrame.contentWindow;
     if (scummWindow && scummWindow.currentRoom !== undefined) {
-      // If ScummVM room differs, trigger transition
       const targetRoom = ROOM_ID_MAP[state.currentRoom] || state.currentRoom;
       if (scummWindow.currentRoom !== targetRoom) {
-        // Use the ScummVM's own transition function if available
-        if (scummWindow.transitionToRoom && scummWindow.ROOMS && scummWindow.ROOMS[targetRoom]) {
-          scummWindow.currentRoom = targetRoom;
-          scummWindow.loadHotspots();
-          scummWindow.updateLocationIndicator();
+        // Mark that WE initiated this sync (prevent poll from reverting it)
+        lastSyncInitiated = Date.now();
+        // Use the ScummVM's own transition function
+        if (scummWindow.ROOMS && scummWindow.ROOMS[targetRoom]) {
+          if (scummWindow.transitionToRoom) {
+            scummWindow.transitionToRoom(targetRoom);
+          } else {
+            scummWindow.currentRoom = targetRoom;
+            scummWindow.loadHotspots();
+            scummWindow.updateLocationIndicator();
+          }
         }
       }
 
       // Sync inventory
       if (scummWindow.inventory !== undefined) {
-        // Map MUD inventory items to ScummVM format
         const mapped = state.inventory.map(item => {
           if (item.id === 'life-ring' || item.id === 'life_ring') return { id: 'life_ring', name: 'Life Ring' };
           if (item.id === 'coffee') return { id: 'coffee', name: 'Coffee Mug' };
@@ -310,8 +342,12 @@ function syncScummFrame() {
   }
 }
 
-// ── Listen for ScummVM room changes ──
+// ── Poll ScummVM frame for room changes (fallback) ──
 function pollScummRoom() {
+  // Skip polling during cooldown (prevents race condition / loop)
+  const now = Date.now();
+  if (now - lastSyncInitiated < SYNC_COOLDOWN_MS) return;
+
   const scummFrame = document.getElementById('scumm-frame');
   try {
     const scummWindow = scummFrame.contentWindow;
@@ -321,6 +357,7 @@ function pollScummRoom() {
       const mappedMud = reverseMapRoom(scummRoom);
       if (mappedMud && state.currentRoom !== mappedMud) {
         // ScummVM changed, update MUD state
+        lastSyncInitiated = Date.now();
         state.currentRoom = mappedMud;
         try { localStorage.setItem(WORLD_KEY, JSON.stringify(state)); } catch(e) {}
         updateRoomDisplay();
@@ -354,8 +391,8 @@ window.addEventListener('load', () => {
   }
   updateRoomDisplay();
 
-  // Poll ScummVM frame for room changes (every 500ms)
-  setInterval(pollScummRoom, 500);
+  // Poll ScummVM frame for room changes (every 800ms, less aggressive)
+  setInterval(pollScummRoom, 800);
 
   // Initial sync attempt after frames load
   setTimeout(() => {
