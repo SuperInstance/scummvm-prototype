@@ -2168,6 +2168,7 @@ function getResponse(verb, hsId) {
         'hs-nav-charts': 'A chartplotter showing the Alaska coast. Your position blinks red near Resurrection Bay.',
         'hs-door-aft-wh': 'A door leading aft to the deck. Cold air seeps under it.',
         'hs-door-galley': 'A floor hatch with a ladder leading down to the galley. Warm air rises.',
+        'hs-hatch-engine': 'A heavy floor hatch with a ladder leading down to the engine room. Heat and diesel smell rise through the seal.',
         'hs-captain': 'The Captain stands at the helm, hands behind his back. Gold trim on navy blue.'
       },
       'use': {
@@ -2178,6 +2179,7 @@ function getResponse(verb, hsId) {
         'hs-nav-charts': 'You zoom in on the chart. Depth contours, a wreck marked with an X. You\'re in 20 fathoms.',
         'hs-door-aft-wh': '__EXIT__',
         'hs-door-galley': '__EXIT__',
+        'hs-hatch-engine': '__EXIT__',
         'hs-captain': 'The Captain glances at you. "Hands off the helm."'
       },
       'talk to': {
@@ -2188,6 +2190,7 @@ function getResponse(verb, hsId) {
         'hs-nav-charts': 'The chart doesn\'t talk back.',
         'hs-door-aft-wh': 'Doors don\'t talk.',
         'hs-door-galley': 'Doors don\'t talk.',
+        'hs-hatch-engine': 'Hatches don\'t talk. But the engine below has plenty to say.',
         'hs-captain': '__OPEN_DIALOGUE__'
       },
       'walk to': {
@@ -2198,6 +2201,7 @@ function getResponse(verb, hsId) {
         'hs-nav-charts': 'You walk to the chartplotter.',
         'hs-door-aft-wh': '__EXIT__',
         'hs-door-galley': '__EXIT__',
+        'hs-hatch-engine': '__EXIT__',
         'hs-captain': 'You approach the Captain.'
       },
       'pick up': {
@@ -2208,13 +2212,14 @@ function getResponse(verb, hsId) {
         'hs-nav-charts': 'Mounted in the console.',
         'hs-door-aft-wh': 'It\'s a door.',
         'hs-door-galley': 'It\'s a hatch.',
+        'hs-hatch-engine': 'It\'s a heavy steel hatch.',
         'hs-captain': 'The Captain stares at you. "Don\'t."'
       },
-      'push': {'hs-helm-wheel':'The wheel turns slightly. The Captain adjusts it back.','hs-radar-display':'Buttons don\'t press easily.','hs-compass-rose':'The binnacle is solid.','hs-radio-console':'Static crackles.','hs-nav-charts':'The screen doesn\'t move.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-captain':'The Captain doesn\'t budge.'},
-      'pull': {'hs-helm-wheel':'You pull the wheel. The boat lurches.','hs-radar-display':'It\'s mounted.','hs-compass-rose':'Solid.','hs-radio-console':'Mounted.','hs-nav-charts':'Mounted.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-captain':'The Captain steps back.'},
-      'open': {'hs-helm-wheel':'Can\'t open a wheel.','hs-radar-display':'Can\'t open a screen.','hs-compass-rose':'The binnacle cover is already open.','hs-radio-console':'Can\'t open a radio.','hs-nav-charts':'Can\'t open a screen.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-captain':'The Captain ignores you.'},
-      'close': {'hs-helm-wheel':'Nothing to close.','hs-radar-display':'Nothing to close.','hs-compass-rose':'Nothing to close.','hs-radio-console':'Nothing to close.','hs-nav-charts':'Nothing to close.','hs-door-aft-wh':'Already closed.','hs-door-galley':'Already closed.','hs-captain':'The Captain turns to the window.'},
-      'give': {'hs-helm-wheel':'Nothing to give.','hs-radar-display':'Nothing to give.','hs-compass-rose':'Nothing to give.','hs-radio-console':'Nothing to give.','hs-nav-charts':'Nothing to give.','hs-door-aft-wh':'Nothing to give.','hs-door-galley':'Nothing to give.','hs-captain': hasItem('coffee') ? '__GIVE_COFFEE_CAPTAIN__' : 'You have nothing to give.'}
+      'push': {'hs-helm-wheel':'The wheel turns slightly. The Captain adjusts it back.','hs-radar-display':'Buttons don\'t press easily.','hs-compass-rose':'The binnacle is solid.','hs-radio-console':'Static crackles.','hs-nav-charts':'The screen doesn\'t move.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-hatch-engine':'__EXIT__','hs-captain':'The Captain doesn\'t budge.'},
+      'pull': {'hs-helm-wheel':'You pull the wheel. The boat lurches.','hs-radar-display':'It\'s mounted.','hs-compass-rose':'Solid.','hs-radio-console':'Mounted.','hs-nav-charts':'Mounted.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-hatch-engine':'__EXIT__','hs-captain':'The Captain steps back.'},
+      'open': {'hs-helm-wheel':'Can\'t open a wheel.','hs-radar-display':'Can\'t open a screen.','hs-compass-rose':'The binnacle cover is already open.','hs-radio-console':'Can\'t open a radio.','hs-nav-charts':'Can\'t open a screen.','hs-door-aft-wh':'__EXIT__','hs-door-galley':'__EXIT__','hs-hatch-engine':'__EXIT__','hs-captain':'The Captain ignores you.'},
+      'close': {'hs-helm-wheel':'Nothing to close.','hs-radar-display':'Nothing to close.','hs-compass-rose':'Nothing to close.','hs-radio-console':'Nothing to close.','hs-nav-charts':'Nothing to close.','hs-door-aft-wh':'Already closed.','hs-door-galley':'Already closed.','hs-hatch-engine':'Already closed.','hs-captain':'The Captain turns to the window.'},
+      'give': {'hs-helm-wheel':'Nothing to give.','hs-radar-display':'Nothing to give.','hs-compass-rose':'Nothing to give.','hs-radio-console':'Nothing to give.','hs-nav-charts':'Nothing to give.','hs-door-aft-wh':'Nothing to give.','hs-door-galley':'Nothing to give.','hs-hatch-engine':'Nothing to give.','hs-captain': hasItem('coffee') ? '__GIVE_COFFEE_CAPTAIN__' : 'You have nothing to give.'}
     };
     return r[verb]?.[hsId];
   }
