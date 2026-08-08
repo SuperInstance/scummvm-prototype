@@ -1,0 +1,120 @@
+/* ════════════════════════════════════════════════════════════
+ * SKIN: BAR — The Tap
+ * Warm amber, wood grain, candlelight flicker
+ * A tavern interior. The device lives behind the bar.
+ * ════════════════════════════════════════════════════════════ */
+
+.skin-bar {
+  --skin-bg: #0a0700;
+  --skin-accent: #e8b840;
+  --skin-accent-bright: #ffe080;
+  --skin-accent-dim: #8a6a30;
+  --skin-border: #4a3520;
+  --skin-text: #c8a050;
+  --skin-panel-bg: rgba(10,7,0,0.85);
+  --skin-verb-bg: #0d0900;
+  --skin-font: 'Courier New', Courier, monospace;
+}
+
+/* Verb bar — wooden with brass accents */
+.skin-bar #verb-bar {
+  background: linear-gradient(to bottom, #0d0900, #1a0e04);
+  border-top: 2px solid #4a3520;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(232,184,64,0.05);
+}
+
+.skin-bar .verb-btn {
+  color: #8a6a30;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 0 #000;
+  transition: color 0.15s, background 0.15s, text-shadow 0.15s;
+}
+
+.skin-bar .verb-btn:hover {
+  color: #c8a050;
+  background: rgba(74,53,32,0.3);
+}
+
+.skin-bar .verb-btn.selected {
+  color: #ffe080;
+  background: rgba(200,160,80,0.2);
+  text-shadow: 0 0 4px #e8b840;
+}
+
+/* Status bar — brass-rimmed wooden plank */
+.skin-bar #status-bar {
+  background: rgba(10,7,0,0.9);
+  border-bottom: 1px solid #4a3520;
+  color: #c8a050;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* Inventory — brass-framed slots */
+.skin-bar .inv-item {
+  background: rgba(10,7,0,0.85);
+  border: 1px solid #4a3520;
+  color: #c8a050;
+  box-shadow: inset 0 1px 0 rgba(232,184,64,0.1);
+}
+
+.skin-bar .inv-item.empty {
+  color: #3a2a10;
+  border-color: #2a1e08;
+}
+
+/* Dialogue — parchment-style */
+.skin-bar #dialogue-panel {
+  background: #0d0900;
+  border: 2px solid #4a3520;
+  box-shadow: 4px 4px 16px rgba(0,0,0,0.8), inset 0 0 20px rgba(232,184,64,0.03);
+}
+
+.skin-bar #dialogue-header {
+  background: linear-gradient(to bottom, #1a1208, #2a1e10);
+  color: #e8b840;
+  border-bottom: 1px solid #4a3520;
+}
+
+.skin-bar .dialogue-option:hover {
+  background: rgba(200,160,80,0.15);
+  color: #ffe080;
+}
+
+/* Speech bubbles — aged parchment */
+.skin-bar .speech-bubble {
+  background: rgba(10,7,0,0.92);
+  border: 1px solid #8a6a30;
+  color: #e8b840;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+/* CRT overlay — warm amber tint */
+.skin-bar #crt-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,0,0,0.15) 3px,
+    rgba(0,0,0,0.15) 4px
+  );
+}
+
+/* Verb line — golden text */
+.skin-bar #verb-line {
+  color: #e8b840;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* Response box */
+.skin-bar #response-box {
+  background: rgba(10,7,0,0.92);
+  border: 1px solid #8a6a30;
+  color: #e8b840;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+/* Location indicator — faded gold */
+.skin-bar #location-indicator {
+  color: #8a6a30;
+}

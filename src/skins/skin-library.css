@@ -1,0 +1,150 @@
+/* ════════════════════════════════════════════════════════════
+ * SKIN: LIBRARY — The Reading Room
+ * Deep wood, brass lamps, leather spines
+ * A quiet space for words. The device writes.
+ * ════════════════════════════════════════════════════════════ */
+
+.skin-library {
+  --skin-bg: #0a0604;
+  --skin-accent: #c9a227;
+  --skin-accent-bright: #e8c840;
+  --skin-accent-dim: #7a5a18;
+  --skin-border: #3a2810;
+  --skin-text: #9a7a30;
+  --skin-text-bright: #c9a227;
+  --skin-panel-bg: rgba(10,6,4,0.88);
+  --skin-verb-bg: #080402;
+  --skin-font: 'Courier New', monospace;
+}
+
+/* Verb bar — leather-bound shelf edge */
+.skin-library #verb-bar {
+  background: linear-gradient(to bottom, #080402, #1a1008);
+  border-top: 2px solid #3a2810;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(201,162,39,0.04);
+}
+
+.skin-library .verb-btn {
+  color: #7a5a18;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  font-style: italic;
+  transition: color 0.2s, background 0.2s, text-shadow 0.2s;
+}
+
+.skin-library .verb-btn:hover {
+  color: #c9a227;
+  background: rgba(122,90,24,0.3);
+}
+
+.skin-library .verb-btn.selected {
+  color: #e8c840;
+  background: rgba(201,162,39,0.15);
+  text-shadow: 0 0 4px #c9a227;
+}
+
+/* Status bar — brass-lamp-lit shelf */
+.skin-library #status-bar {
+  background: rgba(10,6,4,0.9);
+  border-bottom: 1px solid #3a2810;
+  color: #c9a227;
+  text-shadow: 1px 1px 0 #000;
+  font-style: italic;
+}
+
+/* Inventory — bookmark slots */
+.skin-library .inv-item {
+  background: rgba(10,6,4,0.88);
+  border: 1px solid #3a2810;
+  color: #c9a227;
+  font-style: italic;
+  text-shadow: 0 0 2px rgba(201,162,39,0.2);
+}
+
+.skin-library .inv-item.empty {
+  color: #2a1c10;
+  border-color: #1a1008;
+}
+
+/* Dialogue — margin notes in a book */
+.skin-library #dialogue-panel {
+  background: #0a0604;
+  border: 2px solid #3a2810;
+  box-shadow: 4px 4px 16px rgba(0,0,0,0.8), inset 0 0 20px rgba(201,162,39,0.02);
+}
+
+.skin-library #dialogue-header {
+  background: linear-gradient(to bottom, #1a1008, #2a1c10);
+  color: #e8c840;
+  border-bottom: 1px solid #3a2810;
+  font-style: italic;
+  letter-spacing: 1px;
+}
+
+.skin-library .dialogue-option:hover {
+  background: rgba(201,162,39,0.12);
+  color: #e8c840;
+}
+
+/* Speech bubbles — margin annotations */
+.skin-library .speech-bubble {
+  background: rgba(10,6,4,0.92);
+  border: 1px solid #7a5a18;
+  color: #c9a227;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+  font-style: italic;
+}
+
+.skin-library .speech-bubble::before {
+  border-top-color: #7a5a18;
+}
+
+/* CRT overlay — minimal, soft amber */
+.skin-library #crt-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(201,162,39,0.06) 3px,
+    rgba(201,162,39,0.06) 4px
+  );
+}
+
+/* Verb line */
+.skin-library #verb-line {
+  color: #c9a227;
+  text-shadow: 1px 1px 0 #000;
+  font-style: italic;
+  letter-spacing: 0.5px;
+}
+
+/* Response box */
+.skin-library #response-box {
+  background: rgba(10,6,4,0.92);
+  border: 1px solid #7a5a18;
+  color: #c9a227;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+  font-style: italic;
+}
+
+/* Location indicator — handwritten label */
+.skin-library #location-indicator {
+  color: #7a5a18;
+  letter-spacing: 0.5px;
+  font-style: italic;
+}
+
+/* Soft warm reading-lamp glow */
+.skin-library #game-container {
+  cursor: pointer;
+}
+
+/* Gentle page-turn breathing */
+@keyframes readingBreath {
+  0%, 100% { opacity: 0.92; }
+  50% { opacity: 1; }
+}
+
+.skin-library #scene-canvas {
+  filter: brightness(0.95) sepia(0.1);
+}

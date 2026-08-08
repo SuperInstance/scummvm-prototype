@@ -1,0 +1,146 @@
+/* ════════════════════════════════════════════════════════════
+ * SKIN: ENGINE ROOM — The Service Bay
+ * Dark red/orange, heat shimmer, oil-stained metal
+ * A working space. The device is a diagnostic terminal.
+ * ════════════════════════════════════════════════════════════ */
+
+.skin-engine-room {
+  --skin-bg: #0d0300;
+  --skin-accent: #ff6020;
+  --skin-accent-bright: #ff8040;
+  --skin-accent-dim: #8a3010;
+  --skin-border: #4a1808;
+  --skin-text: #8a3010;
+  --skin-text-bright: #ff6020;
+  --skin-panel-bg: rgba(13,3,0,0.88);
+  --skin-verb-bg: #0a0400;
+  --skin-font: 'Courier New', monospace;
+}
+
+/* Verb bar — industrial warning-stripe aesthetic */
+.skin-engine-room #verb-bar {
+  background: linear-gradient(to bottom, #0a0400, #1a0600);
+  border-top: 2px solid #4a1808;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,96,32,0.08);
+}
+
+.skin-engine-room .verb-btn {
+  color: #8a3010;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  font-weight: bold;
+  transition: color 0.1s, background 0.1s;
+}
+
+.skin-engine-room .verb-btn:hover {
+  color: #ff6020;
+  background: rgba(74,24,8,0.4);
+}
+
+.skin-engine-room .verb-btn.selected {
+  color: #ff8040;
+  background: rgba(255,96,32,0.15);
+  text-shadow: 0 0 4px #ff6020;
+}
+
+/* Status bar — warning display */
+.skin-engine-room #status-bar {
+  background: rgba(13,3,0,0.9);
+  border-bottom: 1px solid #4a1808;
+  color: #ff6020;
+  text-shadow: 0 0 3px rgba(255,96,32,0.3);
+}
+
+/* Inventory — gauge-style readouts */
+.skin-engine-room .inv-item {
+  background: rgba(13,3,0,0.88);
+  border: 1px solid #4a1808;
+  color: #ff6020;
+  text-shadow: 0 0 2px rgba(255,96,32,0.3);
+}
+
+.skin-engine-room .inv-item.empty {
+  color: #3a1004;
+  border-color: #1a0600;
+}
+
+/* Dialogue — warning-sticker panel */
+.skin-engine-room #dialogue-panel {
+  background: #0d0300;
+  border: 2px solid #4a1808;
+  box-shadow: 4px 4px 16px rgba(0,0,0,0.8), 0 0 12px rgba(255,96,32,0.1);
+}
+
+.skin-engine-room #dialogue-header {
+  background: linear-gradient(to bottom, #1a0600, #2a0a02);
+  color: #ff8040;
+  border-bottom: 1px solid #4a1808;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.skin-engine-room .dialogue-option:hover {
+  background: rgba(255,96,32,0.15);
+  color: #ff8040;
+}
+
+/* Speech bubbles — caution-tag style */
+.skin-engine-room .speech-bubble {
+  background: rgba(13,3,0,0.92);
+  border: 1px solid #8a3010;
+  color: #ff6020;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6), 0 0 4px rgba(255,96,32,0.1);
+}
+
+.skin-engine-room .speech-bubble::before {
+  border-top-color: #8a3010;
+}
+
+/* CRT overlay — amber/red warning hue */
+.skin-engine-room #crt-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(255,80,20,0.12) 3px,
+    rgba(255,80,20,0.12) 4px
+  );
+}
+
+/* Verb line */
+.skin-engine-room #verb-line {
+  color: #ff6020;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+}
+
+/* Response box */
+.skin-engine-room #response-box {
+  background: rgba(13,3,0,0.92);
+  border: 1px solid #8a3010;
+  color: #ff6020;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+/* Location indicator */
+.skin-engine-room #location-indicator {
+  color: #8a3010;
+  letter-spacing: 1px;
+}
+
+/* Overall warm tint */
+.skin-engine-room #game-container {
+  cursor: pointer;
+}
+
+/* Ambient vibration effect — subtle shake */
+@keyframes engineVibration {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(0.3px, -0.2px); }
+  50% { transform: translate(-0.2px, 0.3px); }
+  75% { transform: translate(0.2px, 0.1px); }
+}
+
+.skin-engine-room #scene-canvas {
+  animation: engineVibration 0.15s infinite;
+}

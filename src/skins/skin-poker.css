@@ -1,0 +1,144 @@
+/* ════════════════════════════════════════════════════════════
+ * SKIN: POKER ROOM — The Card Room
+ * Green felt, low amber lamp, smoke haze
+ * A gentleman's gambling parlor. The device deals.
+ * ════════════════════════════════════════════════════════════ */
+
+.skin-poker-room {
+  --skin-bg: #020806;
+  --skin-accent: #d4af37;
+  --skin-accent-bright: #f0d050;
+  --skin-accent-dim: #7a6020;
+  --skin-border: #1a3818;
+  --skin-text: #7a6020;
+  --skin-text-bright: #d4af37;
+  --skin-panel-bg: rgba(2,8,6,0.88);
+  --skin-verb-bg: #020806;
+  --skin-font: 'Courier New', monospace;
+}
+
+/* Verb bar — velvet-draped card table edge */
+.skin-poker-room #verb-bar {
+  background: linear-gradient(to bottom, #020806, #0a2010);
+  border-top: 2px solid #1a3818;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(212,175,55,0.05);
+}
+
+.skin-poker-room .verb-btn {
+  color: #7a6020;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+  transition: color 0.15s, background 0.15s, text-shadow 0.15s;
+}
+
+.skin-poker-room .verb-btn:hover {
+  color: #d4af37;
+  background: rgba(212,175,55,0.1);
+}
+
+.skin-poker-room .verb-btn.selected {
+  color: #f0d050;
+  background: rgba(212,175,55,0.2);
+  text-shadow: 0 0 4px #d4af37;
+}
+
+/* Status bar — brass-trimmed card table rail */
+.skin-poker-room #status-bar {
+  background: rgba(2,8,6,0.9);
+  border-bottom: 1px solid #1a3818;
+  color: #d4af37;
+  text-shadow: 1px 1px 0 #000;
+}
+
+/* Inventory — chip-stack slots */
+.skin-poker-room .inv-item {
+  background: rgba(2,8,6,0.88);
+  border: 1px solid #1a3818;
+  color: #d4af37;
+  text-shadow: 0 0 2px rgba(212,175,55,0.2);
+  border-radius: 2px;
+}
+
+.skin-poker-room .inv-item.empty {
+  color: #0a2010;
+  border-color: #061410;
+}
+
+/* Dialogue — card-face panel */
+.skin-poker-room #dialogue-panel {
+  background: #020806;
+  border: 2px solid #1a3818;
+  box-shadow: 4px 4px 16px rgba(0,0,0,0.8), inset 0 0 16px rgba(212,175,55,0.02);
+}
+
+.skin-poker-room #dialogue-header {
+  background: linear-gradient(to bottom, #0a2010, #1a3818);
+  color: #f0d050;
+  border-bottom: 1px solid #1a3818;
+  letter-spacing: 1px;
+}
+
+.skin-poker-room .dialogue-option:hover {
+  background: rgba(212,175,55,0.15);
+  color: #f0d050;
+}
+
+/* Speech bubbles — card-back style */
+.skin-poker-room .speech-bubble {
+  background: rgba(2,8,6,0.92);
+  border: 1px solid #7a6020;
+  color: #d4af37;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+.skin-poker-room .speech-bubble::before {
+  border-top-color: #7a6020;
+}
+
+/* CRT overlay — subtle, warm */
+.skin-poker-room #crt-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(212,175,55,0.08) 3px,
+    rgba(212,175,55,0.08) 4px
+  );
+}
+
+/* Verb line */
+.skin-poker-room #verb-line {
+  color: #d4af37;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+}
+
+/* Response box */
+.skin-poker-room #response-box {
+  background: rgba(2,8,6,0.92);
+  border: 1px solid #7a6020;
+  color: #d4af37;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+/* Location indicator */
+.skin-poker-room #location-indicator {
+  color: #7a6020;
+  letter-spacing: 1px;
+  font-style: italic;
+}
+
+/* Green felt ambient tint */
+.skin-poker-room #game-container {
+  cursor: pointer;
+}
+
+/* Felt texture overlay */
+@keyframes feltShift {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.35; }
+}
+
+.skin-poker-room #scene-canvas {
+  filter: sepia(0.15) saturate(1.1);
+}

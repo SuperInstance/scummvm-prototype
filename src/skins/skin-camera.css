@@ -1,0 +1,153 @@
+/* ════════════════════════════════════════════════════════════
+ * SKIN: CAMERA ROOM — The Studio Gallery
+ * Dark grey, multi-monitor glow, cable runs
+ * A broadcast monitoring station. The device watches.
+ * ════════════════════════════════════════════════════════════ */
+
+.skin-camera-room {
+  --skin-bg: #0a0a0a;
+  --skin-accent: #00dd44;
+  --skin-accent-bright: #44ff66;
+  --skin-accent-dim: #0a6030;
+  --skin-border: #333333;
+  --skin-text: #888888;
+  --skin-text-bright: #00dd44;
+  --skin-panel-bg: rgba(10,10,10,0.9);
+  --skin-verb-bg: #050505;
+  --skin-font: 'Courier New', monospace;
+}
+
+/* Verb bar — broadcast console */
+.skin-camera-room #verb-bar {
+  background: linear-gradient(to bottom, #050505, #1a1a1a);
+  border-top: 1px solid #333333;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.8);
+}
+
+.skin-camera-room .verb-btn {
+  color: #0a6030;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 9px;
+  transition: color 0.1s, background 0.1s;
+}
+
+.skin-camera-room .verb-btn:hover {
+  color: #00dd44;
+  background: rgba(0,221,68,0.1);
+}
+
+.skin-camera-room .verb-btn.selected {
+  color: #44ff66;
+  background: rgba(0,221,68,0.2);
+  text-shadow: 0 0 4px #00dd44;
+}
+
+/* Status bar — broadcast status strip */
+.skin-camera-room #status-bar {
+  background: rgba(10,10,10,0.92);
+  border-bottom: 1px solid #333333;
+  color: #00dd44;
+  text-shadow: 0 0 3px rgba(0,221,68,0.2);
+  letter-spacing: 1px;
+}
+
+/* Inventory — monitor thumbnails */
+.skin-camera-room .inv-item {
+  background: rgba(10,10,10,0.9);
+  border: 1px solid #333333;
+  color: #00dd44;
+  font-size: 8px;
+  text-shadow: 0 0 2px rgba(0,221,68,0.3);
+}
+
+.skin-camera-room .inv-item.empty {
+  color: #333333;
+  border-color: #1a1a1a;
+}
+
+/* Dialogue — lower-third broadcast graphic */
+.skin-camera-room #dialogue-panel {
+  background: #0a0a0a;
+  border: 1px solid #00dd44;
+  box-shadow: 0 0 16px rgba(0,221,68,0.15), 4px 4px 16px rgba(0,0,0,0.8);
+}
+
+.skin-camera-room #dialogue-header {
+  background: linear-gradient(to right, #1a1a1a, #0a0a0a);
+  color: #44ff66;
+  border-bottom: 1px solid #333333;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 10px;
+}
+
+.skin-camera-room .dialogue-option:hover {
+  background: rgba(0,221,68,0.15);
+  color: #44ff66;
+}
+
+/* Speech bubbles — lower-third style */
+.skin-camera-room .speech-bubble {
+  background: rgba(10,10,10,0.92);
+  border-left: 3px solid #00dd44;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  color: #00dd44;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+.skin-camera-room .speech-bubble::before {
+  display: none;
+}
+
+/* CRT overlay — broadcast monitor scan */
+.skin-camera-room #crt-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,221,68,0.1) 3px,
+    rgba(0,221,68,0.1) 4px
+  );
+}
+
+/* Verb line */
+.skin-camera-room #verb-line {
+  color: #00dd44;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+}
+
+/* Response box */
+.skin-camera-room #response-box {
+  background: rgba(10,10,10,0.92);
+  border: 1px solid #0a6030;
+  color: #00dd44;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+/* Location indicator — chyron text */
+.skin-camera-room #location-indicator {
+  color: #888888;
+  letter-spacing: 1px;
+  font-size: 8px;
+}
+
+/* REC indicator pulse */
+@keyframes recPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.skin-camera-room #status-bar::after {
+  content: '● REC';
+  position: absolute;
+  right: 100px;
+  top: 4px;
+  color: #ff4444;
+  font-size: 9px;
+  animation: recPulse 1.5s infinite;
+}

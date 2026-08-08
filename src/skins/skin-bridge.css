@@ -1,0 +1,140 @@
+/* ════════════════════════════════════════════════════════════
+ * SKIN: BRIDGE — The Wheelhouse
+ * Dark blue, phosphor green instruments, radar sweep
+ * A vessel control center. The device sits at the helm.
+ * ════════════════════════════════════════════════════════════ */
+
+.skin-bridge {
+  --skin-bg: #000a14;
+  --skin-accent: #44ccff;
+  --skin-accent-bright: #88eeff;
+  --skin-accent-dim: #226688;
+  --skin-border: #0a3040;
+  --skin-text: #226688;
+  --skin-text-bright: #44ccff;
+  --skin-panel-bg: rgba(0,10,20,0.85);
+  --skin-verb-bg: #000810;
+  --skin-font: 'Courier New', monospace;
+}
+
+/* Verb bar — steel console with phosphor glow */
+.skin-bridge #verb-bar {
+  background: linear-gradient(to bottom, #000810, #001830);
+  border-top: 2px solid #0a3040;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.8), inset 0 1px 0 rgba(68,204,255,0.1);
+}
+
+.skin-bridge .verb-btn {
+  color: #226688;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 9px;
+  transition: color 0.1s, background 0.1s, text-shadow 0.1s;
+}
+
+.skin-bridge .verb-btn:hover {
+  color: #44ccff;
+  background: rgba(0,48,80,0.4);
+  text-shadow: 0 0 3px rgba(68,204,255,0.3);
+}
+
+.skin-bridge .verb-btn.selected {
+  color: #88eeff;
+  background: rgba(68,204,255,0.15);
+  text-shadow: 0 0 6px #44ccff;
+}
+
+/* Status bar — tactical display */
+.skin-bridge #status-bar {
+  background: rgba(0,10,20,0.9);
+  border-bottom: 1px solid #0a3040;
+  color: #44ccff;
+  text-shadow: 0 0 4px rgba(68,204,255,0.3);
+}
+
+/* Inventory — LCD readout panels */
+.skin-bridge .inv-item {
+  background: rgba(0,10,20,0.85);
+  border: 1px solid #0a3040;
+  color: #44ccff;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 2px rgba(68,204,255,0.4);
+  box-shadow: inset 0 1px 0 rgba(68,204,255,0.05);
+}
+
+.skin-bridge .inv-item.empty {
+  color: #0a3040;
+  border-color: #041820;
+}
+
+/* Dialogue — tactical overlay */
+.skin-bridge #dialogue-panel {
+  background: #000a14;
+  border: 1px solid #44ccff;
+  box-shadow: 0 0 20px rgba(68,204,255,0.2), 4px 4px 16px rgba(0,0,0,0.8);
+}
+
+.skin-bridge #dialogue-header {
+  background: linear-gradient(to bottom, #001830, #002848);
+  color: #88eeff;
+  border-bottom: 1px solid #0a3040;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.skin-bridge .dialogue-option:hover {
+  background: rgba(68,204,255,0.15);
+  color: #88eeff;
+  text-shadow: 0 0 3px rgba(68,204,255,0.3);
+}
+
+/* Speech bubbles — comms overlay */
+.skin-bridge .speech-bubble {
+  background: rgba(0,10,20,0.92);
+  border: 1px solid #226688;
+  color: #44ccff;
+  box-shadow: 0 0 8px rgba(68,204,255,0.15);
+}
+
+.skin-bridge .speech-bubble::before {
+  border-top-color: #226688;
+}
+
+/* CRT overlay — phosphor green scan lines */
+.skin-bridge #crt-overlay {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 2px,
+    rgba(0,255,100,0.12) 3px,
+    rgba(0,255,100,0.12) 4px
+  );
+}
+
+/* Verb line */
+.skin-bridge #verb-line {
+  color: #44ccff;
+  text-shadow: 0 0 4px rgba(68,204,255,0.4);
+  letter-spacing: 1px;
+}
+
+/* Response box */
+.skin-bridge #response-box {
+  background: rgba(0,10,20,0.92);
+  border: 1px solid #226688;
+  color: #44ccff;
+  box-shadow: 0 0 8px rgba(68,204,255,0.15);
+}
+
+/* Location indicator */
+.skin-bridge #location-indicator {
+  color: #226688;
+  letter-spacing: 1px;
+}
+
+/* Cursor — crosshair for precision targeting */
+.skin-bridge #game-container {
+  cursor: crosshair;
+}
