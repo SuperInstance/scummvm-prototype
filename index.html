@@ -890,10 +890,58 @@ function drawBarRail() {
   });
   // Riker
   drawRiker();
+  // Jukebox (left corner, near the radio door)
+  drawJukebox();
+  // Radio room door (far left)
+  const rdx = 3, rdy = 15, rdw = 32, rdh = 115;
+  ctx.fillStyle = '#1a1520'; ctx.fillRect(rdx, rdy, rdw, rdh);
+  ctx.fillStyle = '#0a0810'; ctx.fillRect(rdx+4, rdy+4, rdw-8, rdh-8);
+  // Green glow under door
+  const rgGrad = ctx.createRadialGradient(rdx+16, rdy+rdh, 2, rdx+16, rdy+rdh, 15);
+  rgGrad.addColorStop(0, 'rgba(68,255,68,0.15)'); rgGrad.addColorStop(1, 'rgba(68,255,68,0)');
+  ctx.fillStyle = rgGrad; ctx.fillRect(rdx, rdy+rdh-15, rdw+10, 20);
+  // Door label
+  ctx.fillStyle = '#2a5a30'; ctx.font = '4px monospace'; ctx.fillText('RADIO', rdx+6, rdy+10);
+  // Doorknob
+  ctx.fillStyle = '#3a4a30'; ctx.fillRect(rdx+rdw-6, rdy+rdh/2, 2, 3);
   // Vignette
   const vg = ctx.createRadialGradient(160, 80, 50, 160, 100, 180);
   vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(0.6, 'rgba(0,0,0,0.2)'); vg.addColorStop(1, 'rgba(0,0,0,0.5)');
   ctx.fillStyle = vg; ctx.fillRect(0, 0, 320, 200);
+}
+
+function drawJukebox() {
+  // Small jukebox in the corner
+  const jx = 220, jy = 80;
+  // Cabinet
+  ctx.fillStyle = '#2a1a08'; ctx.fillRect(jx, jy, 22, 40);
+  ctx.fillStyle = '#1a0e04'; ctx.fillRect(jx+2, jy+2, 18, 36);
+  // Glass front — amber glow
+  ctx.fillStyle = '#3a2a10'; ctx.fillRect(jx+4, jy+4, 14, 20);
+  const jg = ctx.createRadialGradient(jx+11, jy+14, 1, jx+11, jy+14, 8);
+  jg.addColorStop(0, 'rgba(232,184,64,0.4)'); jg.addColorStop(1, 'rgba(232,184,64,0)');
+  ctx.fillStyle = jg; ctx.fillRect(jx+4, jy+4, 14, 20);
+  // Frequency display
+  const jf = Math.sin(candlePhase * 3) * 0.1 + 0.9;
+  ctx.fillStyle = `rgba(232,184,64,${jf})`; ctx.font = '4px monospace';
+  ctx.fillText('2182', jx+7, jy+12);
+  // Selection buttons (lit dots)
+  for (let i = 0; i < 4; i++) {
+    const lit = i === (Math.floor(candlePhase) % 4);
+    ctx.fillStyle = lit ? '#e8b840' : '#4a3510';
+    ctx.fillRect(jx+5+i*3, jy+16, 2, 2);
+  }
+  // Speaker grille
+  ctx.fillStyle = '#0a0804'; ctx.fillRect(jx+4, jy+26, 14, 10);
+  ctx.strokeStyle = 'rgba(80,60,30,0.3)';
+  for (let gx = jx+5; gx < jx+18; gx += 2) { ctx.beginPath(); ctx.moveTo(gx, jy+26); ctx.lineTo(gx, jy+36); ctx.stroke(); }
+  // Now playing ticker
+  if (jukeboxState.nowPlaying) {
+    ctx.fillStyle = 'rgba(10,40,10,0.7)'; ctx.fillRect(jx-5, jy+42, 32, 8);
+    ctx.fillStyle = '#44ff44'; ctx.font = '3px monospace';
+    const txt = jukeboxState.nowPlaying.substring(0, 20);
+    ctx.fillText(txt, jx-3, jy+47);
+  }
 }
 
 function drawRiker() {
@@ -1986,37 +2034,47 @@ function getResponse(verb, hsId) {
         'hs-bar-counter': 'The bar is sticky with spilled beer and ringed with glass marks.',
         'hs-bar-stool': 'The stool creaks. Someone sat here all night.',
         'hs-door-aft': 'A heavy wooden door. A faded sign reads "AFT DECK". Salt air seeps through the cracks.',
+        'hs-door-radio': 'A narrow door at the back of the bar. A faint green glow leaks underneath. A chalkboard with frequencies is nailed to it.',
+        'hs-jukebox': 'A weathered jukebox in the corner, glass-fronted, glowing amber. The dial reads 2182 kHz. Track listings are taped to the side.',
         'hs-riker': 'A weathered first officer in a faded jacket. He\'s turning a glass, checking a clipboard.'
       },
       'use': {
         'hs-bar-counter': 'You lean on the bar. The wood is solid, worn smooth by decades of elbows.',
         'hs-bar-stool': 'You sit. The stool creaks but holds.',
         'hs-door-aft': '__EXIT__',
+        'hs-door-radio': '__EXIT__',
+        'hs-jukebox': '__USE_JUKEBOX__',
         'hs-riker': 'Riker glances at you. "Not now."'
       },
       'talk to': {
         'hs-bar-counter': 'You talk to the bar. The bar does not respond.',
         'hs-bar-stool': 'You whisper to the stool. It\'s just a stool.',
         'hs-door-aft': 'You speak to the door. It remains a door.',
+        'hs-door-radio': 'You speak to the door. A faint static crackles back.',
+        'hs-jukebox': 'You talk to the jukebox. It hums in response. It\'s listening.',
         'hs-riker': '__OPEN_DIALOGUE__'
       },
       'walk to': {
         'hs-bar-counter': 'You walk to the bar.',
         'hs-bar-stool': 'You walk to the stool.',
         'hs-door-aft': '__EXIT__',
+        'hs-door-radio': '__EXIT__',
+        'hs-jukebox': 'You walk to the jukebox. Its glow is warm on your face.',
         'hs-riker': 'You approach Riker. He looks up from his clipboard.'
       },
       'pick up': {
         'hs-bar-counter': 'Your fingers brush the counter. Nothing to pick up.',
         'hs-bar-stool': 'You try to lift the stool. It\'s bolted down.',
         'hs-door-aft': 'You can\'t pick up a door.',
+        'hs-door-radio': 'It\'s a door.',
+        'hs-jukebox': 'The jukebox is bolted to the floor. It\'s been here longer than the bar.',
         'hs-riker': 'Riker steps back. "Don\'t."'
       },
-      'push': {'hs-bar-counter':'The bar doesn\'t budge.','hs-bar-stool':'The stool scrapes.','hs-door-aft':'The door resists.','hs-riker':'Riker blocks you. "Enough."'},
-      'pull': {'hs-bar-counter':'Nothing happens.','hs-bar-stool':'You pull the stool closer.','hs-door-aft':'The door won\'t open from here.','hs-riker':'Riker pulls away.'},
-      'open': {'hs-bar-counter':'Nothing to open.','hs-bar-stool':'Can\'t open a stool.','hs-door-aft':'__EXIT__','hs-riker':'"I\'m not a door."'},
-      'close': {'hs-bar-counter':'Nothing to close.','hs-bar-stool':'Nothing to close.','hs-door-aft':'Already closed.','hs-riker':'Riker turns away.'},
-      'give': {'hs-bar-counter':'You have nothing to give.','hs-bar-stool':'Nothing to give.','hs-door-aft':'Nothing to give.','hs-riker':'Riker raises an eyebrow. "Offering?"'}
+      'push': {'hs-bar-counter':'The bar doesn\'t budge.','hs-bar-stool':'The stool scrapes.','hs-door-aft':'The door resists.','hs-door-radio':'The door creaks open.','hs-jukebox':'The jukebox rocks slightly. Something rattles inside.','hs-riker':'Riker blocks you. "Enough."'},
+      'pull': {'hs-bar-counter':'Nothing happens.','hs-bar-stool':'You pull the stool closer.','hs-door-aft':'The door won\'t open from here.','hs-door-radio':'The door pulls toward you.','hs-jukebox':'The jukebox doesn\'t budge.','hs-riker':'Riker pulls away.'},
+      'open': {'hs-bar-counter':'Nothing to open.','hs-bar-stool':'Can\'t open a stool.','hs-door-aft':'__EXIT__','hs-door-radio':'__EXIT__','hs-jukebox':'You can\'t open the jukebox. But you can use it.','hs-riker':'"I\'m not a door."'},
+      'close': {'hs-bar-counter':'Nothing to close.','hs-bar-stool':'Nothing to close.','hs-door-aft':'Already closed.','hs-door-radio':'Already closed.','hs-jukebox':'Nothing to close.','hs-riker':'Riker turns away.'},
+      'give': {'hs-bar-counter':'You have nothing to give.','hs-bar-stool':'Nothing to give.','hs-door-aft':'Nothing to give.','hs-door-radio':'Nothing to give.','hs-jukebox':'You have nothing to give the jukebox.','hs-riker':'Riker raises an eyebrow. "Offering?"'}
     };
     return r[verb]?.[hsId];
   }
@@ -2325,6 +2383,58 @@ function getResponse(verb, hsId) {
     };
     return r[verb]?.[hsId];
   }
+
+  // ── THE RADIO ROOM responses ──
+  if (room === 'the-radio') {
+    const r = {
+      'look at': {
+        'hs-radio-receiver': 'A Hammarlund HQ-180A, rack-mounted, glowing softly. Green LCD reads 2182 kHz. The guard channel. Always listening.',
+        'hs-tape-deck': 'A Revox B77 reel-to-reel, quarter-track. Reels spin slowly. Someone has labeled the tape: "Fleet Radio — All Episodes."',
+        'hs-chalkboard': 'A chalkboard nailed to the wall. Frequencies are listed in cramped handwriting:\n\n2182 — Fleet Radio\nCh 4  — Podcasts\nCh 7  — Ambient\n0000  — Static',
+        'hs-antenna': 'A copper wire antenna runs up through the deckhead to the mast. The tip glows red — a warning to anyone on deck.',
+        'hs-vu-meter': 'An analog VU meter. The needle bounces gently with the audio. Peaks at -3dB on loud passages.',
+        'hs-door-bar': 'The door back to the bar. Warm amber light leaks underneath. You can hear glasses clinking.'
+      },
+      'use': {
+        'hs-radio-receiver': '__USE_RADIO_RECEIVER__',
+        'hs-tape-deck': 'You press a button on the tape deck. Reels spin up. A voice fills the room — Fleet Radio, mid-sentence, as if it never stopped.',
+        'hs-chalkboard': 'You study the frequencies. Each one is a doorway.',
+        'hs-antenna': 'You trace the antenna wire with your eyes, up through the ceiling, out to the mast, into the sky.',
+        'hs-vu-meter': 'You watch the needle. It dances to the signal, alive.',
+        'hs-door-bar': '__EXIT__'
+      },
+      'talk to': {
+        'hs-radio-receiver': 'The receiver crackles. A distant voice says "...vessel on course two-seven-zero..." then fades.',
+        'hs-tape-deck': 'The tape deck hisses softly. It\'s always hissing.',
+        'hs-chalkboard': 'You read the frequencies aloud. The room seems to amplify your voice.',
+        'hs-antenna': 'You speak to the antenna. Your words go up the wire, out the mast, into the ionosphere. Maybe someone hears them.',
+        'hs-vu-meter': 'The needle twitches when you speak. It\'s listening.',
+        'hs-door-bar': 'It\'s a door.'
+      },
+      'walk to': {
+        'hs-radio-receiver': 'You walk to the receiver. The green glow washes over you.',
+        'hs-tape-deck': 'You walk to the tape deck. The reels mesmerize.',
+        'hs-chalkboard': 'You walk to the chalkboard.',
+        'hs-antenna': 'You walk to where the antenna wire disappears into the ceiling.',
+        'hs-vu-meter': 'You walk to the VU meter.',
+        'hs-door-bar': '__EXIT__'
+      },
+      'pick up': {
+        'hs-radio-receiver': 'It\'s rack-mounted and weighs 40 pounds.',
+        'hs-tape-deck': 'Bolted to the console.',
+        'hs-chalkboard': 'Nailed to the wall.',
+        'hs-antenna': 'It\'s a wire going through the ceiling.',
+        'hs-vu-meter': 'Mounted in the console.',
+        'hs-door-bar': 'It\'s a door.'
+      },
+      'push': {'hs-radio-receiver':'Solid in its rack.','hs-tape-deck':'Mounted.','hs-chalkboard':'Nailed tight.','hs-antenna':'The wire has some give but won\'t come loose.','hs-vu-meter':'Mounted.','hs-door-bar':'__EXIT__'},
+      'pull': {'hs-radio-receiver':'Won\'t come out of the rack.','hs-tape-deck':'Bolted.','hs-chalkboard':'Won\'t come off the wall.','hs-antenna':'The wire is taut.','hs-vu-meter':'Mounted.','hs-door-bar':'__EXIT__'},
+      'open': {'hs-radio-receiver':'You can\'t open a receiver.','hs-tape-deck':'There\'s no lid to open. The reels are exposed.','hs-chalkboard':'Nothing to open.','hs-antenna':'Nothing to open.','hs-vu-meter':'No lid.','hs-door-bar':'__EXIT__'},
+      'close': {'hs-radio-receiver':'Nothing to close.','hs-tape-deck':'Nothing to close.','hs-chalkboard':'Nothing to close.','hs-antenna':'Nothing to close.','hs-vu-meter':'Nothing to close.','hs-door-bar':'Already closed.'},
+      'give': {'hs-radio-receiver':'Nothing to give.','hs-tape-deck':'Nothing to give.','hs-chalkboard':'Nothing to give.','hs-antenna':'Nothing to give.','hs-vu-meter':'Nothing to give.','hs-door-bar':'Nothing to give.'}
+    };
+    return r[verb]?.[hsId];
+  }
   
   return undefined;
 }
@@ -2500,6 +2610,18 @@ function handleHotspotClick(hsId) {
     showResponse('You hand the engineer bot your coffee. It examines the mug with sensor arrays. "Caffeine: 95mg. Temperature: 48°C. Purpose: human maintenance." It pours the coffee into its generator cooling reservoir. "For the ship," it says.');
     inventory = inventory.filter(i => i.id !== 'coffee');
     updateInventoryBar();
+    return;
+  }
+  if (result === '__USE_JUKEBOX__') {
+    openJukebox();
+    showResponse('You press a button on the jukebox. It whirs to life, amber glow pulsing. A frequency selector appears.');
+    return;
+  }
+  if (result === '__USE_RADIO_RECEIVER__') {
+    jukeboxState.selectedChannel = (jukeboxState.selectedChannel + 1) % jukeboxState.channels.length;
+    selectJukeboxChannel(jukeboxState.selectedChannel);
+    const ch = jukeboxState.channels[jukeboxState.selectedChannel];
+    showResponse('You twist the frequency knob. The receiver locks on: ' + ch.label + '. Static clears. Something comes through.');
     return;
   }
   
@@ -2800,10 +2922,32 @@ function animate() {
 
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (jukeboxState.isOpen) { closeJukebox(); return; }
     if (dialoguePanel.classList.contains('visible')) { closeDialogue(); }
     else if (selectedVerb) {
       document.querySelectorAll('.verb-btn').forEach(b => b.classList.remove('selected'));
       selectedVerb = null; verbLine.textContent = '';
+    }
+  }
+  // Jukebox number keys 1-4
+  if (jukeboxState.isOpen && e.key >= '1' && e.key <= '4') {
+    selectJukeboxChannel(parseInt(e.key) - 1);
+  }
+});
+
+// Jukebox canvas click handler — click frequency lines to select
+canvas.addEventListener('click', (e) => {
+  if (!jukeboxState.isOpen) return;
+  const rect = canvas.getBoundingClientRect();
+  const clickX = (e.clientX - rect.left) / rect.width * 320;
+  const clickY = (e.clientY - rect.top) / rect.height * 200;
+  // Check if click is on a channel line
+  const channels = jukeboxState.channels;
+  const ys = [75, 90, 105, 120];
+  for (let i = 0; i < ys.length; i++) {
+    if (clickY > ys[i] - 5 && clickY < ys[i] + 5 && clickX > 55 && clickX < 240) {
+      selectJukeboxChannel(i);
+      return;
     }
   }
 });
@@ -2867,7 +3011,8 @@ const ROOM_AUDIO = {
   'aft-deck':    { ambient: 'assets/audio/aft-deck-ambient.wav',     narration: 'assets/audio/aft-deck-tts.wav' },
   'wheelhouse':  { ambient: 'assets/audio/wheelhouse-ambient.wav',   narration: 'assets/audio/wheelhouse-tts.wav' },
   'galley':      { ambient: 'assets/audio/galley-ambient.wav',       narration: 'assets/audio/galley-tts.wav' },
-  'engine-room': { ambient: 'assets/audio/engine-room-ambient.wav',  narration: 'assets/audio/engine-room-tts.wav' }
+  'engine-room': { ambient: 'assets/audio/engine-room-ambient.wav',  narration: 'assets/audio/engine-room-tts.wav' },
+  'the-radio':  { ambient: 'assets/audio/wheelhouse-ambient.wav',   narration: null }
 };
 
 let lastNarratedRoom = null;
