@@ -944,5 +944,23 @@ document.addEventListener('click', () => {
 });
 </script>
 
+<!-- ═══ Living World Framework ═══ -->
+<script src="src/room-loader.js"></script>
+<script src="src/warp-system.js"></script>
+<script>
+  // Initialize Living World after everything else loads
+  window.addEventListener('load', () => {
+    if (window.LivingWorld) {
+      LivingWorld.init().then(() => {
+        LivingWorld.injectAllMudRooms(ROOMS);
+        if (window.WarpSystem) WarpSystem.initMud();
+        console.log('[Living World] Framework initialized in MUD terminal');
+      }).catch(err => {
+        console.warn('[Living World] Init failed:', err);
+      });
+    }
+  });
+</script>
+
 </body>
 </html>
