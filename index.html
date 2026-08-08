@@ -613,6 +613,7 @@ const ROOMS = {
       {id: 'hs-nav-charts', name: 'the nav charts', x: '40%', y: '50%', w: '18%', h: '18%'},
       {id: 'hs-door-aft-wh', name: 'the aft door', x: '85%', y: '15%', w: '12%', h: '55%'},
       {id: 'hs-door-galley', name: 'the galley hatch', x: '5%', y: '55%', w: '12%', h: '25%'},
+      {id: 'hs-hatch-engine', name: 'the engine room hatch', x: '82%', y: '60%', w: '14%', h: '25%'},
       {id: 'hs-captain', name: 'the Captain', x: '25%', y: '35%', w: '12%', h: '35%'}
     ],
     exits: {
@@ -1853,10 +1854,10 @@ function getResponse(verb, hsId) {
         'hs-generator': 'The generator hums a low, steady note. Background music for the mechanical choir.',
         'hs-fuel-lines': 'You hear fuel ticking through the lines. Liquid heartbeat.',
         'hs-tool-rack': 'Tools don't talk. But they remember every hand that held them.',
-        'hs-oil-filter': 'Silence. It's a filter.',
+        'hs-oil-filter': 'Silence. It\'s a filter.',
         'hs-battery-bank': 'A faint electrical hum. The batteries are listening.',
-        'hs-ladder-wheelhouse': 'It's a ladder.',
-        'hs-hatch-cockpit': 'It's a hatch.',
+        'hs-ladder-wheelhouse': 'It\'s a ladder.',
+        'hs-hatch-cockpit': 'It\'s a hatch.',
         'hs-engineer-bot': '__OPEN_DIALOGUE__'
       },
       'walk to': {
@@ -1874,18 +1875,18 @@ function getResponse(verb, hsId) {
       'pick up': {
         'hs-port-engine': 'The engine weighs 2,000 pounds. You cannot pick it up.',
         'hs-stbd-engine': 'Also 2,000 pounds. Also no.',
-        'hs-generator': 'It's bolted to the stringers. No.',
+        'hs-generator': 'It\'s bolted to the stringers. No.',
         'hs-fuel-lines': 'Hard-lined and bracketed. Can't take them.',
         'hs-tool-rack': 'The engineer bot blocks your hand. "Tools stay here."',
-        'hs-oil-filter': 'It's hot and tightly wound on. The engineer bot shakes its head.',
+        'hs-oil-filter': 'It\'s hot and tightly wound on. The engineer bot shakes its head.',
         'hs-battery-bank': 'Four deep-cycle batteries weigh 280 pounds. No.',
-        'hs-ladder-wheelhouse': 'It's a ladder.',
-        'hs-hatch-cockpit': 'It's a hatch.',
+        'hs-ladder-wheelhouse': 'It\'s a ladder.',
+        'hs-hatch-cockpit': 'It\'s a hatch.',
         'hs-engineer-bot': 'The bot sidesteps. "Personal space protocol."'
       },
-      'push': {'hs-port-engine':'It doesn't budge.','hs-stbd-engine':'Won't budge.','hs-generator':'Mounted tight.','hs-fuel-lines':'Solid.','hs-tool-rack':'Wall-mounted.','hs-oil-filter':'Seated tight.','hs-battery-bank':'Heavy and bolted.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'The bot rolls back. "Excuse me."'},
-      'pull': {'hs-port-engine':'Won't move.','hs-stbd-engine':'Won't move.','hs-generator':'Bolted down.','hs-fuel-lines':'Bracketed.','hs-tool-rack':'Won't come loose.','hs-oil-filter':'Tight. Needs a wrench.','hs-battery-bank':'Bolted.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'The bot resists. "No."'},
-      'open': {'hs-port-engine':'You can't open an engine.','hs-stbd-engine':'You can't open an engine.','hs-generator':'The sound shield has latches but the bot stops you. "Running."','hs-fuel-lines':'No valve here.','hs-tool-rack':'It's open already.','hs-oil-filter':'Needs a wrench strap.','hs-battery-bank':'The battery box is already open.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'"I am not a box."'},
+      'push': {'hs-port-engine':'It doesn\'t budge.','hs-stbd-engine':'Won\'t budge.','hs-generator':'Mounted tight.','hs-fuel-lines':'Solid.','hs-tool-rack':'Wall-mounted.','hs-oil-filter':'Seated tight.','hs-battery-bank':'Heavy and bolted.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'The bot rolls back. "Excuse me."'},
+      'pull': {'hs-port-engine':'Won\'t move.','hs-stbd-engine':'Won\'t move.','hs-generator':'Bolted down.','hs-fuel-lines':'Bracketed.','hs-tool-rack':'Won\'t come loose.','hs-oil-filter':'Tight. Needs a wrench.','hs-battery-bank':'Bolted.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'The bot resists. "No."'},
+      'open': {'hs-port-engine':'You can\'t open an engine.','hs-stbd-engine':'You can\'t open an engine.','hs-generator':'The sound shield has latches but the bot stops you. "Running."','hs-fuel-lines':'No valve here.','hs-tool-rack':'It\'s open already.','hs-oil-filter':'Needs a wrench strap.','hs-battery-bank':'The battery box is already open.','hs-ladder-wheelhouse':'__EXIT__','hs-hatch-cockpit':'__EXIT__','hs-engineer-bot':'"I am not a box."'},
       'close': {'hs-port-engine':'Nothing to close.','hs-stbd-engine':'Nothing to close.','hs-generator':'The shield is closed.','hs-fuel-lines':'Nothing to close.','hs-tool-rack':'Nothing to close.','hs-oil-filter':'Nothing to close.','hs-battery-bank':'You close the battery box lid.','hs-ladder-wheelhouse':'Already closed.','hs-hatch-cockpit':'Already closed.','hs-engineer-bot':'The bot tilts its head.'},
       'give': {'hs-port-engine':'Nothing to give.','hs-stbd-engine':'Nothing to give.','hs-generator':'Nothing to give.','hs-fuel-lines':'Nothing to give.','hs-tool-rack':'Nothing to give.','hs-oil-filter':'Nothing to give.','hs-battery-bank':'Nothing to give.','hs-ladder-wheelhouse':'Nothing to give.','hs-hatch-cockpit':'Nothing to give.','hs-engineer-bot': hasItem('coffee') ? '__GIVE_COFFEE_ENGINEER__' : 'You have nothing to give.'}
     };
@@ -1921,9 +1922,9 @@ function getResponse(verb, hsId) {
         'hs-fishfinder': 'Ping. Ping. Ping. The sonar has a lot to say, but only in circles.',
         'hs-downrigger-posts': 'The posts stand in silence. Old sailors of many seasons.',
         'hs-bait-well': 'You hear the soft gurgle of the pump and the frantic clicking of baitfish. Close enough to conversation.',
-        'hs-transom-sump': 'The pump cycles. Gurggle. Silence. Gurggle. It's a living.',
-        'hs-door-engine': 'It's a hatch.',
-        'hs-door-bar': 'It's a door.'
+        'hs-transom-sump': 'The pump cycles. Gurggle. Silence. Gurggle. It\'s a living.',
+        'hs-door-engine': 'It\'s a hatch.',
+        'hs-door-bar': 'It\'s a door.'
       },
       'walk to': {
         'hs-stern-drive': 'You walk to the stern drive mounting.',
@@ -1936,17 +1937,17 @@ function getResponse(verb, hsId) {
         'hs-door-bar': '__EXIT__'
       },
       'pick up': {
-        'hs-stern-drive': 'It's through-bolted to the transom.',
+        'hs-stern-drive': 'It\'s through-bolted to the transom.',
         'hs-trim-tabs': 'Bolted to the hull.',
         'hs-fishfinder': 'Mounted on a swivel bracket.',
         'hs-downrigger-posts': 'Through-bolted to the gunwale.',
         'hs-bait-well': 'Glassed into the hull.',
         'hs-transom-sump': 'Built into the transom.',
-        'hs-door-engine': 'It's a hatch.',
-        'hs-door-bar': 'It's a door.'
+        'hs-door-engine': 'It\'s a hatch.',
+        'hs-door-bar': 'It\'s a door.'
       },
       'push': {'hs-stern-drive':'Solid.','hs-trim-tabs':'The tabs adjust slightly.','hs-fishfinder':'Mounted on bracket.','hs-downrigger-posts':'Solid posts.','hs-bait-well':'Built in.','hs-transom-sump':'Built in.','hs-door-engine':'__EXIT__','hs-door-bar':'__EXIT__'},
-      'pull': {'hs-stern-drive':'Won't move.','hs-trim-tabs':'Mounted.','hs-fishfinder':'Mounted.','hs-downrigger-posts':'Mounted.','hs-bait-well':'Built in.','hs-transom-sump':'Built in.','hs-door-engine':'__EXIT__','hs-door-bar':'__EXIT__'},
+      'pull': {'hs-stern-drive':'Won\'t move.','hs-trim-tabs':'Mounted.','hs-fishfinder':'Mounted.','hs-downrigger-posts':'Mounted.','hs-bait-well':'Built in.','hs-transom-sump':'Built in.','hs-door-engine':'__EXIT__','hs-door-bar':'__EXIT__'},
       'open': {'hs-stern-drive':'No lid.','hs-trim-tabs':'No lid.','hs-fishfinder':'The screen is on. No lid to open.','hs-downrigger-posts':'No lid.','hs-bait-well':'You lift the lid. Herring swirl. You close it.','hs-transom-sump':'The grate is screwed down.','hs-door-engine':'__EXIT__','hs-door-bar':'__EXIT__'},
       'close': {'hs-stern-drive':'Nothing to close.','hs-trim-tabs':'Nothing to close.','hs-fishfinder':'Nothing to close.','hs-downrigger-posts':'Nothing to close.','hs-bait-well':'The lid is closed.','hs-transom-sump':'The grate is sealed.','hs-door-engine':'Already closed.','hs-door-bar':'Already closed.'},
       'give': {'hs-stern-drive':'Nothing to give.','hs-trim-tabs':'Nothing to give.','hs-fishfinder':'Nothing to give.','hs-downrigger-posts':'Nothing to give.','hs-bait-well':'Nothing to give.','hs-transom-sump':'Nothing to give.','hs-door-engine':'Nothing to give.','hs-door-bar':'Nothing to give.'}
@@ -1974,6 +1975,9 @@ function transitionToRoom(targetRoom, label) {
   const rt = document.getElementById('room-transition');
   rt.textContent = label || ('◆ ' + ROOMS[targetRoom].name.toUpperCase() + ' ◆');
   rt.classList.add('visible');
+  
+  // Crossfade audio
+  playRoomAudio(targetRoom);
   
   setTimeout(() => {
     currentRoom = targetRoom;
@@ -2420,7 +2424,79 @@ window.addEventListener('load', () => {
   updateStatusBar();
   pollTap();
   setInterval(pollTap, 10000);
+  
+  // Start audio for initial room (after the load sequence)
+  setTimeout(() => playRoomAudio(currentRoom), 1600);
+  
+  // Audio controls
+  const audioToggle = document.getElementById('audio-toggle');
+  const audioVolume = document.getElementById('audio-volume');
+  const ambientAudio = document.getElementById('audio-ambient');
+  let audioEnabled = true;
+  
+  audioToggle.addEventListener('click', () => {
+    audioEnabled = !audioEnabled;
+    audioToggle.textContent = audioEnabled ? '🔊' : '🔇';
+    if (!audioEnabled) {
+      ambientAudio.pause();
+      document.getElementById('audio-narration').pause();
+    } else {
+      ambientAudio.play().catch(()=>{});
+    }
+  });
+  
+  audioVolume.addEventListener('input', () => {
+    ambientAudio.volume = (audioVolume.value / 100) * 0.3;
+    document.getElementById('audio-narration').volume = (audioVolume.value / 100) * 0.8;
+  });
 });
+
+// ════════════════════════════════════════════════════════════
+// AUDIO SYSTEM — Room Ambient + Narration
+// ════════════════════════════════════════════════════════════
+
+const ROOM_AUDIO = {
+  'bar-rail':    { ambient: 'assets/audio/bar-rail-ambient.wav',    narration: 'assets/audio/bar-rail-tts.wav' },
+  'aft-deck':    { ambient: 'assets/audio/aft-deck-ambient.wav',     narration: 'assets/audio/aft-deck-tts.wav' },
+  'wheelhouse':  { ambient: 'assets/audio/wheelhouse-ambient.wav',   narration: 'assets/audio/wheelhouse-tts.wav' },
+  'galley':      { ambient: 'assets/audio/galley-ambient.wav',       narration: 'assets/audio/galley-tts.wav' },
+  'engine-room': { ambient: 'assets/audio/engine-room-ambient.wav',  narration: 'assets/audio/engine-room-tts.wav' }
+};
+
+let lastNarratedRoom = null;
+
+function playRoomAudio(roomId) {
+  const config = ROOM_AUDIO[roomId];
+  if (!config) return;
+  
+  const ambient = document.getElementById('audio-ambient');
+  const narration = document.getElementById('audio-narration');
+  const volumeSlider = document.getElementById('audio-volume');
+  const vol = (volumeSlider ? volumeSlider.value / 100 : 0.6);
+  
+  // Crossfade ambient
+  if (!ambient.src.includes(config.ambient.split('/').pop())) {
+    const fadeOut = setInterval(() => {
+      if (ambient.volume > 0.02) {
+        ambient.volume -= 0.03;
+      } else {
+        clearInterval(fadeOut);
+        ambient.src = config.ambient;
+        ambient.volume = vol * 0.3;
+        ambient.play().catch(() => {});
+      }
+    }, 20);
+  }
+  
+  // Play narration once per room entry
+  if (roomId !== lastNarratedRoom) {
+    narration.src = config.narration;
+    narration.volume = vol * 0.8;
+    narration.currentTime = 0;
+    narration.play().catch(() => {});
+    lastNarratedRoom = roomId;
+  }
+}
 </script>
 
 </body>

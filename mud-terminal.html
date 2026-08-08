@@ -700,6 +700,29 @@ function useObject(objName) {
     return;
   }
 
+  if (obj.id === 'port-engine') {
+    println('The port engine thunders. Turbocharged, 350hp. Exhaust elbow glowing orange. 185°F.', 'command-output');
+    return;
+  }
+  if (obj.id === 'stbd-engine') {
+    println('The starboard engine hums. Twin to port. 182°F. Running smooth.', 'command-output');
+    return;
+  }
+  if (obj.id === 'generator') {
+    println('The Onan generator vibrates inside its sound shield. 8kW of house power.', 'command-output');
+    return;
+  }
+  if (obj.id === 'fishfinder') {
+    println('Sonar pings. Concentric circles pulse outward on the screen.', 'command-output');
+    println('Bottom: 20 fathoms, hard substrate. Water temp: 52°F.', 'command-output');
+    println('Fish arches detected at 8 and 12 fathoms. Something big below the baitball.', 'command-output');
+    return;
+  }
+  if (obj.id === 'bait-well') {
+    println('You lift the lid. Herring swirl in circulated water. Fresh and lively. About 2 dozen.', 'command-output');
+    return;
+  }
+
   println('You use ' + obj.name + '. Nothing obvious happens.', 'command-output');
 }
 

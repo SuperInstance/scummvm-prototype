@@ -240,7 +240,8 @@ const ROOM_NAMES = {
   'aft-deck': 'The Aft Deck',
   'wheelhouse': 'The Wheelhouse',
   'galley': 'The Galley',
-  'engine-room': 'The Engine Room'
+  'engine-room': 'The Engine Room',
+  'aft-cockpit': 'The Aft Cockpit'
 };
 
 // Map MUD room IDs to ScummVM room IDs
@@ -249,7 +250,8 @@ const ROOM_ID_MAP = {
   'aft-deck': 'aft-deck',
   'wheelhouse': 'wheelhouse',
   'galley': 'galley',
-  'engine-room': 'aft-deck' // engine room not in scummvm yet, fallback
+  'engine-room': 'engine-room',
+  'aft-cockpit': 'aft-cockpit'
 };
 
 // ── World State Bridge ──
@@ -376,7 +378,9 @@ function reverseMapRoom(scummId) {
     'bar-rail': 'bar-rail',
     'aft-deck': 'aft-deck',
     'wheelhouse': 'wheelhouse',
-    'galley': 'galley'
+    'galley': 'galley',
+    'engine-room': 'engine-room',
+    'aft-cockpit': 'aft-cockpit'
   };
   return map[scummId] || null;
 }
