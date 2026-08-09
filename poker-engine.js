@@ -49,6 +49,22 @@
   // ── Deterministic Deck (seeded shuffle) ───────────────────────────
 
   /**
+   * xmur3 — hash a string to a 32-bit integer seed.
+   * Ensures string seeds produce different decks.
+   */
+  function hashSeed(str) {
+    if (typeof str === 'number') return str >>> 0;
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+
+  /**
    * Mulberry32 — small, fast, deterministic PRNG.
    * Same seed = same hand. This makes the fiction reproducible.
    */
@@ -63,6 +79,7 @@
   }
 
   function createDeck(seed) {
+    const numericSeed = hashSeed(seed);
     const deck = [];
     for (const s of SUITS) {
       for (const r of RANKS) {
@@ -70,7 +87,7 @@
       }
     }
     // Fisher-Yates with deterministic PRNG
-    const rng = mulberry32(seed);
+    const rng = mulberry32(numericSeed);
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
