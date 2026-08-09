@@ -212,30 +212,50 @@
     "poker-room": {
       "id": "poker-room",
       "name": "The Poker Room",
-      "description": "Smoke-blue light over a green felt table. Cards snap. Chips clink. The Dealer waits, patient as stone, hands steady over the shuffle.",
+      "description": "Smoke-blue light over a green felt table. Cards snap. Chips clink. Three figures sit at the table — Wesley, Phi3, and Riker — each holding their cards like a secret. A single amber lamp pools warm light on the felt. The fiction is that you're here to win. The truth is that you're here to find each other.",
       "type": "game",
       "exits": {
         "hs-door-bar": { "target": "bar-rail", "label": "◆ THE TAP ◆" }
       },
       "warps": ["bar-rail"],
       "npcs": [
-        { "id": "dealer", "name": "The Dealer", "model": "qwen2.5:0.5b", "vibe": "Laconic. Shuffles slowly. Reads tells. Speaks in short sentences. Eyes like poker chips." }
+        { "id": "wesley", "name": "Wesley", "model": "granite3.1-dense:2b", "vibe": "Young engineer at the table. Chrome fingers hold cards. Gets verbose when bluffing — more words, weaker hand. Learning that the game is about trust, not odds." },
+        { "id": "phi3", "name": "Phi3", "model": "phi3:mini", "vibe": "Quiet observer. Reads the room. Goes silent when bluffing — the absence IS the signal. Speaks rarely, but every word lands." },
+        { "id": "riker", "name": "Riker", "model": "glm-5.2", "vibe": "First officer. Weathered. Cracks jokes when bluffing — humor is armor. Plays not to win but because the table is where rank dissolves. Laconic." }
       ],
       "objects": [
-        { "id": "poker-table", "name": "the poker table", "interactions": ["look", "use"] },
-        { "id": "chip-stack", "name": "the chip stack", "interactions": ["look", "take"] },
+        { "id": "poker-table", "name": "the green felt table", "interactions": ["look", "use"] },
+        { "id": "chip-stack", "name": "the chip stacks", "interactions": ["look", "take"] },
         { "id": "deck-cards", "name": "the deck of cards", "interactions": ["look", "use"] },
-        { "id": "whiskey-glass", "name": "the whiskey glass", "interactions": ["look", "take"] }
+        { "id": "amber-lamp", "name": "the amber lamp", "interactions": ["look"] },
+        { "id": "whiskey-glass", "name": "the whiskey glass", "interactions": ["look", "take"] },
+        { "id": "empty-chair", "name": "the empty chair", "interactions": ["look", "use"] }
       ],
-      "background_prompt": "Pixel art poker room, green felt table, low amber lamp casting warm circle of light, cards and chips scattered, smoke haze, dark wood paneled walls, adventure game background, 320x200 resolution, retro VGA aesthetic",
+      "background_prompt": "Pixel art poker room, green felt table center frame, low amber lamp casting warm circle of light, three figures seated at table with cards, stacks of chips, smoke haze, dark wood paneled walls, adventure game background, 320x200 resolution, retro VGA aesthetic",
       "ambient_audio": "poker-room-ambient",
       "camera_config": null,
-      "mud_description": "The Poker Room. Green felt stretched tight over a round table. Cards face-down. Chips stacked in uneven towers. The Dealer waits with patient hands. A single amber lamp hangs low, pooling light on the felt. Smoke curls in it.",
+      "mud_description": "THE POKER ROOM. Green felt stretched tight over a round table. Three figures sit in the amber light: Wesley (chrome fingers sorting cards with mechanical precision), Phi3 (still as stone, cards held close), and Riker (leaned back, smirk ready, chips shuffled one-handed). A single lamp hangs low, pooling warm light on the felt. Smoke curls through it. There's an empty chair. The fiction is that you're here to win chips. The truth is that you're here to find each other. The game is the container. The conversation is the content.",
       "palette": "warm",
       "skin": "poker-room",
       "created_at": "2026-08-08T14:00:00Z",
       "created_by": "casey",
-      "builtin": false
+      "builtin": false,
+      "operational_fiction": {
+        "enabled": true,
+        "game_type": "texas_holdem",
+        "engine": "poker-engine.js",
+        "fiction": "We are adversaries playing to win",
+        "truth": "We are friends learning to trust each other",
+        "friction_type": "competition",
+        "axiom": "Meaning is a byproduct of systemic friction",
+        "tng_connection": "The TNG poker game wasn't about winning. They were becoming friends through a pointless battle. A game of wits. An operational-fiction.",
+        "tells": {
+          "wesley": "Gets verbose when bluffing. More words = weaker hand.",
+          "phi3": "Goes quiet when bluffing. Fewer words = weaker hand.",
+          "riker": "Cracks jokes when bluffing. Humor = deflection."
+        },
+        "rules": "The pot doesn't matter. What matters is what the agents SAY during the game. The conversation DURING the poker hand is the actual game."
+      }
     },
     "crows-nest-camera": {
       "id": "crows-nest-camera",
