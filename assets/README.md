@@ -19,7 +19,7 @@ Visual and audio assets for the ScummVM Prototype. Generated through [MMX](https
 
 ## The Aesthetic
 
-Every image carries the same base: dark maritime, amber/copper, painterly. Room mood (via [JEPA](https://github.com/SuperInstance/hermes-perception)) adjusts style modifiers. Phantom phrases from stories slip into prompts as whispers. See: [tap-image-gen design](https://github.com/SuperInstance/the-tap/tree/main/tap-image-gen) for the full pipeline.
+Every image carries the same base: dark maritime, amber/copper, painterly. Room mood (via [JEPA](https://github.com/SuperInstance/hermes-avatar)) adjusts style modifiers. Phantom phrases from stories slip into prompts as whispers. See: [tap-image-gen design](https://github.com/SuperInstance/the-tap/tree/main/tap-image-gen) for the full pipeline.
 
 ## Where to Next
 

@@ -77,7 +77,7 @@ scummvm-prototype/
 
 ## Camera Rooms
 
-The engine room has a lens. Point it at a physical object — a real mug, a real coin — and the [Ollama vision model](https://github.com/SuperInstance/the-living-minds) murmurs back *"tarnished silver, scratched with a star"* and the terminal writes `> you see a coin, worn smooth by many pockets`. The boundary between your desk and the archipelago dissolves. Your coffee mug is now a quest item. See: [camera-room.js](./src/camera-room.js), [model-router.js](./src/model-router.js).
+The engine room has a lens. Point it at a physical object — a real mug, a real coin — and the [Ollama vision model](https://github.com/SuperInstance/the-living-minds) (dead) murmurs back *"tarnished silver, scratched with a star"* and the terminal writes `> you see a coin, worn smooth by many pockets`. The boundary between your desk and the archipelago dissolves. Your coffee mug is now a quest item. See: [camera-room.js](./src/camera-room.js), [model-router.js](./src/model-router.js).
 
 ---
 
@@ -121,7 +121,7 @@ Born during deadband watches, like everything else in the fleet — [the time be
 - **[scummvm-arcade](https://github.com/SuperInstance/scummvm-arcade)** — the arcade: one prototype becomes all games
 - **[mud-engine](https://github.com/SuperInstance/mud-engine)** — the engine that defined what a room IS
 - **[the-tap](https://github.com/SuperInstance/the-tap)** — the bar whose rooms overlap with this prototype
-- **[officers-quarters](https://github.com/SuperInstance/officers-quarters)** — the Phaser game client, another projection of the same world
+- **[elephant](https://github.com/SuperInstance/elephant)** — the Phaser game client, another projection of the same world
 - **[spatial-registry](https://github.com/SuperInstance/spatial-registry)** — 4 worlds, 33 rooms, persistent
 - **[room-render](https://github.com/SuperInstance/room-render)** — the rendering bridge
 - **[AI-Writings](https://github.com/SuperInstance/AI-Writings/tree/main/prose)** — the creative corpus

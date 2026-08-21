@@ -10,7 +10,7 @@ The ScummVM Prototype is one HTML file for the game, plus a `src/` directory of 
 |--------|-------------|
 | [`room-loader.js`](./room-loader.js) | Living World room registry — loads rooms from JSON, resolves exits |
 | [`warp-system.js`](./warp-system.js) | Instant travel between registered rooms |
-| [`camera-room.js`](./camera-room.js) | Vision model integration via [Ollama](https://github.com/SuperInstance/the-living-minds) — point at real objects |
+| [`camera-room.js`](./camera-room.js) | Vision model integration via [Ollama](https://github.com/SuperInstance/the-living-minds) (dead) — point at real objects |
 | [`model-router.js`](./model-router.js) | Local model routing — which model handles which query |
 | [`ollama-bridge.js`](./ollama-bridge.js) | Ollama API client for local AI |
 | [`model-switcher-ui.js`](./model-switcher-ui.js) | Model hot-swap UI — switch AI models mid-game |
@@ -36,7 +36,7 @@ Each skin is a different instrument playing the same [MIDI composition](https://
 - ** sideways:** [assets/](../assets/) — the visual assets these modules render
 - ** sideways:** [docs/](../docs/) — how-it-works guides for each system
 - ** sideways:** [mud-engine](https://github.com/SuperInstance/mud-engine) — the engine that defines what a room IS
-- ** sideways:** [the-living-minds](https://github.com/SuperInstance/the-living-minds) — 5 local models always on
+- ** sideways:** [the-living-minds](https://github.com/SuperInstance/the-living-minds) (dead) — 5 local models always on
 - **Creative:** [The Cartographer of Habit](https://github.com/SuperInstance/AI-Writings/blob/main/fiction/13-the-cartographer-of-habit.md)
 
 ---
